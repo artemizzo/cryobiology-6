@@ -48,6 +48,8 @@
 ## Швидкий старт
 Повна інструкція (встановлення, ваги, чистий ПК) → **[`INSTALL.md`](INSTALL.md)**.
 
+> 🐳 **Без встановлення Python:** усе в Docker — `docker compose up --build` → http://localhost:5000. Деталі → **[`DOCKER.md`](DOCKER.md)**.
+
 > **Windows:** спершу встанови [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe) — без нього PyTorch не стартує (`OSError: WinError 126`, `c10.dll`).
 ```bash
 pip install -r apps/mask_picker/requirements.txt

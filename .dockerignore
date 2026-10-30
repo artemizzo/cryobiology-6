@@ -1,0 +1,22 @@
+# Дані й ваги підключаються як volume (docker-compose.yml), в образ НЕ копіюються.
+data/
+cryobiology4/weights/
+
+.git/
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/*.egg-info/
+*.zip
+*.7z
+
+# Локальні папки з .gitignore
+_archive/
+_send/
+_inbox/
+_tmp/
+_backups/
+_logs/
+docs/_internal/

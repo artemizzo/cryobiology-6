@@ -1,0 +1,47 @@
+# Cryobiology V — запуск у Docker. Інструкція: DOCKER.md.
+#
+#   docker compose up --build                                  # Mask Picker → http://localhost:5000
+#   docker compose run --rm segmentation --data-dir data/<dataset> --model instanseg
+#   docker compose run --rm bake --data-dir data/<dataset> --pack
+#
+# Датасет для редактора: змінна DATASET (за замовч. vesicles_good), напр.
+#   DATASET=my_dataset docker compose up        (PowerShell: $env:DATASET="my_dataset"; docker compose up)
+
+services:
+  mask-picker:
+    build:
+      context: .
+      target: mask-picker
+    image: cryobiology/mask-picker
+    command: ["--workspace", "/app/data/${DATASET:-vesicles_good}"]
+    ports:
+      # 127.0.0.1 — редактор доступний лише з цього ПК, не з локальної мережі.
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./data:/app/data
+
+  segmentation:
+    build:
+      context: .
+      target: segmentation
+    image: cryobiology/segmentation
+    profiles: ["tools"]   # не стартує з `docker compose up`, лише через `docker compose run`
+    volumes:
+      - ./data:/app/data
+      - ./cryobiology4/weights:/app/cryobiology4/weights
+      - model-cache:/cache
+
+  bake:
+    image: cryobiology/mask-picker
+    build:
+      context: .
+      target: mask-picker
+    profiles: ["tools"]
+    entrypoint: ["python", "tools/launchers/bake_all.py"]
+    command: ["--help"]
+    volumes:
+      - ./data:/app/data
+      - ./_archive:/app/_archive   # сюди --pack кладе фінальний ZIP
+
+volumes:
+  model-cache:

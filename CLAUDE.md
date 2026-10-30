@@ -32,6 +32,9 @@ python tools/launchers/bake_all.py --data-dir data/<dataset> --pack      # deliv
 python tools/make_sandbox.py                                             # безпечна копія датасету для експериментів
 cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 237 passed)
 ```
+Docker (`Dockerfile`, `docker-compose.yml`, інструкція — `DOCKER.md`): `docker compose up --build` → редактор;
+`docker compose run --rm segmentation|bake ...` → сегментація / deliverable. Залежності змінюєш — онови й Dockerfile.
+
 Основна платформа користувача — **Windows** (`.bat`-лаунчери в корені), шляхи мають лишатись переносними.
 
 ## Ключові правила (з історії багів — порушення = регресії десинку)
