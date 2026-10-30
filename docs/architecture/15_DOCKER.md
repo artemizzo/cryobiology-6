@@ -66,6 +66,8 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
 | `segmentation` | `docker compose run --rm segmentation <args>` | `./data`, `./cryobiology4/weights`, volume `model-cache:/cache` | профіль `tools` → не стартує з `up` |
 | `bake` | `docker compose run --rm bake --data-dir data/<ds> --pack` | `./data`, `./_archive → /app/_archive` | образ той самий, що `mask-picker`; entrypoint `tools/launchers/bake_all.py` |
 
+- **`init: true`** у всіх сервісах: без init Python працює як PID 1 і ігнорує SIGTERM → `Ctrl+C` /
+  `docker compose down` чекали 10 с до примусового kill (виглядало як «Ctrl+C не працює»). З init — <1 с.
 - Робоча директорія в контейнері — `/app` = корінь репо, тому відносні шляхи `data/<ds>` у командах працюють
   так само, як без Docker.
 - **`_archive` змонтовано обовʼязково**: `bake_all.py --pack` пише ZIP у `ROOT/_archive/`; без mount ZIP

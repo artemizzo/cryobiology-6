@@ -13,6 +13,8 @@ services:
       context: .
       target: mask-picker
     image: cryobiology/mask-picker
+    # init: Python як PID 1 у контейнері ігнорує SIGTERM → Ctrl+C / `down` чекали 10 с до примусового kill.
+    init: true
     command: ["--workspace", "/app/data/${DATASET:-vesicles_good}"]
     ports:
       # 127.0.0.1 — редактор доступний лише з цього ПК, не з локальної мережі.
@@ -25,6 +27,7 @@ services:
       context: .
       target: segmentation
     image: cryobiology/segmentation
+    init: true
     profiles: ["tools"]   # не стартує з `docker compose up`, лише через `docker compose run`
     volumes:
       - ./data:/app/data
@@ -36,6 +39,7 @@ services:
     build:
       context: .
       target: mask-picker
+    init: true
     profiles: ["tools"]
     entrypoint: ["python", "tools/launchers/bake_all.py"]
     command: ["--help"]
