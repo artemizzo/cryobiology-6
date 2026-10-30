@@ -54,9 +54,9 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
 - Автор — попередній розробник (upstream `MykhailoFesenko/cryobiology-mask-picker`, писав разом з Claude).
   Зараз проєкт веде **новий мейнтейнер-початківець** у форку **`artemizzo/cryobiology-6`** (сюди й пушити).
   Пояснювати йому простою мовою, українською, без жаргону; не вважати, що він знає git/Python/Docker.
-- Гілки: `main` (+ цей `CLAUDE.md`), `docker-setup` (Docker-налаштування; ще не злите в `main`).
+- Гілки: працюємо в `main`. `docker-setup` злита в `main` (2026-10-30), більше не потрібна.
 - У користувача: Windows 11, Docker Desktop (WSL2) встановлено; проєкт склоновано git-ом у
-  `Documents\cryobiology-6` (гілка `docker-setup`); редактор у Docker запускається ✅ (2026-10-30).
+  `Documents\cryobiology-6` (переведено на `main`); редактор у Docker запускається ✅ (2026-10-30).
   Даних `data/vesicles_good` (Google Drive) на ПК ще нема. Python локально не ставився.
 - Хмарна сесія Claude Code не запускає код з репо без дозволу (класифікатор безпеки) — попросити дозвіл, якщо треба.
 
