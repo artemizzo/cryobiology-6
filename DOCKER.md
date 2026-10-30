@@ -64,6 +64,7 @@ ZIP зʼявиться у папці `_archive/` проєкту.
 **Linux:** файли, створені контейнером у `data/`, належатимуть `root`. Виправити: `sudo chown -R $USER data _archive`.
 
 ## Як влаштовано (для розробника)
+Детально (рішення, підводні камені, стан перевірки) — [`docs/architecture/15_DOCKER.md`](docs/architecture/15_DOCKER.md).
 - `Dockerfile` — два етапи: `mask-picker` (Python 3.12-slim + CPU-torch + `apps/mask_picker/requirements.txt`,
   `cellsegkit` через `PYTHONPATH`) і `segmentation` (+ ML-пакети з зафіксованими версіями).
 - `docker-compose.yml` — сервіси `mask-picker` (порт `127.0.0.1:5000`), `segmentation` і `bake`

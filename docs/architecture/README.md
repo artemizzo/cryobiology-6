@@ -45,6 +45,7 @@
 | 12 | [12_DELIVERABLE_EXPORT.md](12_DELIVERABLE_EXPORT.md) | Finalize/ZIP, semantic/mask_groups/overlays, що отримує замовник | ✅ |
 | 13 | [13_SEGMENTATION_BOUNDARY.md](13_SEGMENTATION_BOUNDARY.md) | Контракт із сегментацією: raw output = read-only SSoT | ✅ |
 | 14 | [14_CROSS_CUTTING_MAP.md](14_CROSS_CUTTING_MAP.md) | Граф tool↔tool + реєстр multi-representation концептів (аудит-карта) | ✅ |
+| 15 | [15_DOCKER.md](15_DOCKER.md) | Docker-образи (mask-picker / segmentation), compose, чому так, стан перевірки | ✅ |
 | — | [_AUDIT_FINDINGS.md](_AUDIT_FINDINGS.md) | Живий лог знайдених багів (severity/repro/консюмери/статус) | ✅ (живий) |
 
 **Легенда статусу:** ✅ готово · 🔲 SKELETON (наповнюється у Phase 2) · 🚧 в роботі.
