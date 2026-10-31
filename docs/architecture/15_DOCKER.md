@@ -102,6 +102,10 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
 
 - Лог останнього запуску — `_logs/launcher.log` (перезаписується; `_logs/` у `.gitignore`).
 - Вимкнення: редактор живе, поки живий Docker; restart-policy немає → після рестарту Docker сам не стартує.
+- Перевірка готовності (Windows) — `System.Net.WebRequest` на `http://127.0.0.1:5000/` з `Proxy = $null`,
+  НЕ `Invoke-WebRequest http://localhost:5000`: у користувача той давав хибне «не відповідає» 90 с, хоча сервер
+  працював (PS 5.1: системний проксі / `localhost`→`::1`, а порт опубліковано лише на 127.0.0.1). Остання
+  помилка перевірки пишеться в лог.
 - `.ps1` збережені в **UTF-8 з BOM** — інакше Windows PowerShell 5.1 ламає кирилицю. Не прибирати BOM.
 - `ErrorActionPreference = Continue`: у PS 5.1 stderr нативних команд (docker пише прогрес у stderr) при
   `Stop` перетворюється на виняток. Успіх визначаємо за кодами виходу.

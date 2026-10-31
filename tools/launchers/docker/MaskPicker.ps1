@@ -22,6 +22,10 @@ $ErrorActionPreference = "Continue"   # помилки рахуємо за ко�
 
 $Root = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
 $Url = "http://localhost:5000"
+# Перевірка «чи відповідає» — напряму на 127.0.0.1 без системного проксі: Invoke-WebRequest у PS 5.1 для
+# `localhost` іде через проксі/IPv6 (::1), а порт опубліковано лише на 127.0.0.1 → хибне «не відповідає».
+$ProbeUrl = "http://127.0.0.1:5000/"
+$script:LastProbeError = ""
 $LogDir = Join-Path $Root "_logs"
 $Log = Join-Path $LogDir "launcher.log"
 
@@ -166,9 +170,17 @@ function Test-EditorRunning {
 
 function Test-EditorResponds {
     try {
-        $r = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 2
-        return ($r.StatusCode -eq 200)
-    } catch { return $false }
+        $req = [System.Net.WebRequest]::Create($ProbeUrl)
+        $req.Proxy = $null
+        $req.Timeout = 3000
+        $resp = $req.GetResponse()
+        $code = [int]$resp.StatusCode
+        $resp.Close()
+        return ($code -eq 200)
+    } catch {
+        $script:LastProbeError = $_.Exception.Message
+        return $false
+    }
 }
 
 # ── Основний сценарій ──────────────────────────────────────────────────────
@@ -207,12 +219,17 @@ if ((Test-EditorRunning) -and (Test-EditorResponds)) {
 
 if (-not $Hidden) {
     # Режим розробника: як `docker compose up --build`, але з авто-відкриттям браузера.
-    Start-Job -ArgumentList $Url -ScriptBlock {
-        param($u)
+    Start-Job -ArgumentList $Url, $ProbeUrl -ScriptBlock {
+        param($u, $probe)
         for ($i = 0; $i -lt 900; $i++) {
             try {
-                $r = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 2
-                if ($r.StatusCode -eq 200) { Start-Process $u; return }
+                $req = [System.Net.WebRequest]::Create($probe)
+                $req.Proxy = $null
+                $req.Timeout = 3000
+                $resp = $req.GetResponse()
+                $resp.Close()
+                Start-Process $u
+                return
             } catch { }
             Start-Sleep -Seconds 1
         }
@@ -230,7 +247,9 @@ Set-Status "Чекаю, поки редактор відповість..."
 $deadline = (Get-Date).AddSeconds(90)
 while (-not (Test-EditorResponds)) {
     if (-not (Test-EditorRunning)) { Fail "Контейнер редактора зупинився одразу після старту (впав)." }
-    if ((Get-Date) -gt $deadline) { Fail "Редактор не відповів на $Url за 90 секунд." }
+    if ((Get-Date) -gt $deadline) {
+        Fail "Редактор не відповів на $ProbeUrl за 90 секунд. Остання помилка перевірки: $($script:LastProbeError)"
+    }
     Wait-Ms 1000
 }
 
