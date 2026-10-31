@@ -24,7 +24,6 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
 $Url = "http://localhost:5000"
 $LogDir = Join-Path $Root "_logs"
 $Log = Join-Path $LogDir "launcher.log"
-$DockerDesktopExe = Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
 
 Set-Location $Root
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -131,6 +130,30 @@ function Invoke-Docker([string[]]$DockerArgs) {
     return $p.ExitCode
 }
 
+# Docker Desktop може стояти не в Program Files (встановлення «лише для поточного користувача»).
+# Шукаємо: поруч із docker.exe (<install>\resources\bin\docker.exe), у реєстрі, у типових папках.
+function Find-DockerDesktop {
+    $candidates = @()
+    $cmd = Get-Command docker -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source) {
+        $candidates += Join-Path (Split-Path (Split-Path (Split-Path $cmd.Source))) "Docker Desktop.exe"
+    }
+    foreach ($key in @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Docker Desktop",
+            "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Docker Desktop")) {
+        $loc = (Get-ItemProperty -Path $key -ErrorAction SilentlyContinue).InstallLocation
+        if ($loc) { $candidates += Join-Path $loc "Docker Desktop.exe" }
+    }
+    $candidates += Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"
+    $candidates += Join-Path $env:LOCALAPPDATA "Programs\Docker\Docker\Docker Desktop.exe"
+    $candidates += Join-Path $env:LOCALAPPDATA "Programs\DockerDesktop\Docker Desktop.exe"
+    foreach ($c in $candidates) {
+        Write-Log "  шукаю Docker Desktop: $c"
+        if (Test-Path -LiteralPath $c) { return $c }
+    }
+    return $null
+}
+
 function Test-DockerReady {
     & docker info *> $null
     return ($LASTEXITCODE -eq 0)
@@ -157,9 +180,11 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
 }
 
 if (-not (Test-DockerReady)) {
-    if (-not (Test-Path $DockerDesktopExe)) {
-        Fail "Docker не запущений, і Docker Desktop не знайдено за шляхом $DockerDesktopExe. Запусти Docker Desktop вручну."
+    $DockerDesktopExe = Find-DockerDesktop
+    if (-not $DockerDesktopExe) {
+        Fail "Docker не запущений, і Docker Desktop не знайдено (перелік перевірених шляхів — вище). Запусти Docker Desktop вручну."
     }
+    Write-Log "Docker Desktop: $DockerDesktopExe"
     Set-Status "Запускаю Docker Desktop... (до 2-3 хв)"
     Start-Process -FilePath $DockerDesktopExe
     $deadline = (Get-Date).AddMinutes(3)

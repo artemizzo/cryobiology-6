@@ -94,7 +94,7 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
 |---|---|---|
 | Режим ярлика | `-Hidden` (ярлик: `powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File … -Hidden`) | `--hidden` (`.desktop`, `Terminal=false`) |
 | Віконце-статус | WinForms (marquee); довгі docker-команди — `Start-Process` + `DoEvents`, щоб не «Не відповідає» | `zenity --progress` через fifo; нема zenity/GUI → `notify-send` / нічого |
-| Docker не працює | стартує `%ProgramFiles%\Docker\Docker\Docker Desktop.exe`, чекає `docker info` ≤3 хв | `systemctl --user start docker-desktop` або `systemctl start docker` (/`pkexec`); немає доступу до сокета → підказка `usermod -aG docker` |
+| Docker не працює | шукає `Docker Desktop.exe` (поруч із `docker.exe` → `<install>\resources\bin`, реєстр Uninstall HKLM/HKCU, `Program Files`, `%LOCALAPPDATA%\Programs`) — бо per-user встановлення ставить НЕ в Program Files (було в користувача); стартує, чекає `docker info` ≤3 хв | `systemctl --user start docker-desktop` або `systemctl start docker` (/`pkexec`); немає доступу до сокета → підказка `usermod -aG docker` |
 | Уже працює | лише відкриває браузер | те саме |
 | Запуск | `docker compose up -d --build mask-picker`, чекає HTTP 200 ≤90 с | те саме |
 | Помилка | пише `_logs/show_error.ps1` і відкриває **нову консоль** (`-NoExit`): лог запуску + `docker compose logs --tail 200 mask-picker` | `_logs/show_error.sh` у першому знайденому терміналі; fallback `zenity --text-info` / `notify-send` |
