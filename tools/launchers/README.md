@@ -8,6 +8,11 @@ Run commands from the project root unless a section says otherwise.
 
 ## What is here
 
+**Docker launchers** (recommended): `docker/` — `MaskPicker.ps1` (Windows), `mask-picker.sh` (Linux),
+`create_shortcuts.*`. Created via `create_shortcuts.bat` / `create_shortcuts.sh` in the project root.
+See `DOCKER.md` and `docs/architecture/15_DOCKER.md` §5. The files below are for running with a local Python.
+
+
 | File | Purpose |
 | --- | --- |
 | `mask_picker_launcher.pyw` | Starts Mask Picker without a console window and opens the browser. |

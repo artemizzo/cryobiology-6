@@ -1,5 +1,6 @@
 # Дані й ваги підключаються як volume (docker-compose.yml), в образ НЕ копіюються.
 data/
+.env
 cryobiology4/weights/
 
 .git/

@@ -15,7 +15,10 @@
 | `docker-compose.yml` | 3 сервіси: `mask-picker` (довгоживучий, `up`), `segmentation` і `bake` (профіль `tools`, лише `run`). |
 | `.dockerignore` | Не пускає в build context `data/`, `cryobiology4/weights/`, `.git`, venv, кеші, архіви. |
 | `DOCKER.md` | Інструкція для користувача (Windows-first). |
-| `apps/mask_picker/requirements.txt` | Спільний із не-Docker встановленням; тут закріплено `Pillow<13` (див. §5). |
+| `tools/launchers/docker/MaskPicker.ps1` | Лаунчер Windows (ярлик `-Hidden` / вручну з консоллю), див. §5. |
+| `tools/launchers/docker/mask-picker.sh` | Лаунчер Linux (ярлик `--hidden` / з терміналу), див. §5. |
+| `tools/launchers/docker/create_shortcuts.{ps1,sh}` + `create_shortcuts.{bat,sh}` у корені | Створення ярликів (раз). |
+| `apps/mask_picker/requirements.txt` | Спільний із не-Docker встановленням; тут закріплено `Pillow<13` (див. §7). |
 
 ## 2. Образ `mask-picker`
 
@@ -74,10 +77,49 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
   зникав би разом із контейнером (`--rm`).
 - `bake_all.py` сам піднімає Mask Picker сабпроцесом на `127.0.0.1:<port>` всередині контейнера і ходить у
   нього `urllib` → у контейнері працює без додаткових налаштувань (порт назовні не потрібен).
-- Дані на хості: bind-mount → файли, створені контейнером, на Linux належать `root` (на Windows/macOS Docker
-  Desktop — без проблем). Атомарний запис (`_atomic_write_json`: tempfile + replace) на bind-mount Windows працює.
+- **`user: "${MP_UID:-0}:${MP_GID:-0}"`** у `mask-picker` і `bake`: на Linux лаунчер / `create_shortcuts.sh`
+  ставлять uid/gid користувача (в env / `.env`) → файли в `data/`, `_archive/` належать йому, а не root.
+  Дефолт 0 = root (Windows/macOS: Docker Desktop сам мапить права, нічого не міняється). Тому в образі
+  `ENV HOME=/tmp MPLCONFIGDIR=/tmp/matplotlib` (не-root не може писати в `/root`). Лаунчер робить
+  `mkdir -p data _archive` до старту — інакше Docker створить bind-mount папки від root і не-root контейнер
+  падає з `PermissionError` у `ws.mkdir`. `segmentation` — завжди root (instanseg пише моделі в site-packages).
+- Дані на хості: bind-mount. Атомарний запис (`_atomic_write_json`: tempfile + replace) на bind-mount Windows працює.
 
-## 5. Знайдені під час докеризації проблеми
+## 5. Лаунчери (ярлики)
+
+Мета: запуск подвійним кліком, без консолі, з автозапуском Docker; **при помилці — консоль із сирим логом**
+(рішення користувача: так легше ловити баги, ніж з «гарним» повідомленням). Ручний режим — з консоллю.
+
+| | Windows `MaskPicker.ps1` | Linux `mask-picker.sh` |
+|---|---|---|
+| Режим ярлика | `-Hidden` (ярлик: `powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File … -Hidden`) | `--hidden` (`.desktop`, `Terminal=false`) |
+| Віконце-статус | WinForms (marquee); довгі docker-команди — `Start-Process` + `DoEvents`, щоб не «Не відповідає» | `zenity --progress` через fifo; нема zenity/GUI → `notify-send` / нічого |
+| Docker не працює | стартує `%ProgramFiles%\Docker\Docker\Docker Desktop.exe`, чекає `docker info` ≤3 хв | `systemctl --user start docker-desktop` або `systemctl start docker` (/`pkexec`); немає доступу до сокета → підказка `usermod -aG docker` |
+| Уже працює | лише відкриває браузер | те саме |
+| Запуск | `docker compose up -d --build mask-picker`, чекає HTTP 200 ≤90 с | те саме |
+| Помилка | пише `_logs/show_error.ps1` і відкриває **нову консоль** (`-NoExit`): лог запуску + `docker compose logs --tail 200 mask-picker` | `_logs/show_error.sh` у першому знайденому терміналі; fallback `zenity --text-info` / `notify-send` |
+| Ручний режим | без `-Hidden`: статус у консоль, далі `docker compose up --build` на передньому плані + фоновий job відкриває браузер | без `--hidden` — те саме |
+
+- Лог останнього запуску — `_logs/launcher.log` (перезаписується; `_logs/` у `.gitignore`).
+- Вимкнення: редактор живе, поки живий Docker; restart-policy немає → після рестарту Docker сам не стартує.
+- `.ps1` збережені в **UTF-8 з BOM** — інакше Windows PowerShell 5.1 ламає кирилицю. Не прибирати BOM.
+- `ErrorActionPreference = Continue`: у PS 5.1 stderr нативних команд (docker пише прогрес у stderr) при
+  `Stop` перетворюється на виняток. Успіх визначаємо за кодами виходу.
+- Можливе коротке блимання консолі при `-WindowStyle Hidden` — відома особливість Windows. Якщо заважатиме —
+  обгорнути `.ps1` в `.exe` (`ps2exe`). VBScript-обгортку не використовувати (Microsoft прибирає VBScript).
+- Старі лаунчери без Docker (`tools/launchers/mask_picker_launcher.pyw`, `create_windows_shortcuts.ps1`) лишились
+  для запуску з локальним Python — ярлик «Cryobiology Mask Picker» (не плутати з «Mask Picker»).
+
+## 6. Відомі обмеження Docker-версії
+
+- **Системне вікно вибору папки не працює** (`routes/api_workspace.py`: `/api/workspace/pick-folder`,
+  `/api/workspace/pick-dir` відкривають `tkinter.filedialog` на машині сервера; у контейнері нема дисплея → 500
+  «folder picker unavailable»). Зачіпає кнопки **«Змінити»** (workspace) і **«Зберегти у»** (експорт,
+  `workspace_bar.js`). Обхід: датасет — через `DATASET` + перезапуск; експорт без `dest` → ZIP качається
+  браузером (працює). Фікс (не зроблено, потрібна зміна коду): у Docker-режимі показувати в браузері список
+  підпапок `/app/data` замість native-діалогу; для експорту — завжди download.
+
+## 7. Знайдені під час докеризації проблеми
 
 - **Pillow 13 ламає `bake_all.py --pack`** (`tools/launchers/bake_all.py:271`: `Image.fromarray(uint16, mode="I;16")`
   → `ValueError: Invalid mode for data type`) і 12 тестів у `tests/test_audit_export.py`. Причина — свіже
@@ -88,18 +130,21 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
 - Загальний урок: `requirements.txt` має лише нижні межі → «чисте» встановлення через рік може зламатись.
   Docker-образ зібраний сьогодні — стабільний; перезбірка (`--build` без кешу) тягне нові версії.
 
-## 6. Стан перевірки (2026-10-30)
+## 8. Стан перевірки
 
 | Що | Де | Результат |
 |---|---|---|
 | Збірка справжнього `Dockerfile`, target `mask-picker` | Windows 11 + Docker Desktop 4.97 (WSL2), ПК користувача | ✅ ~3.5 хв, старт з `export=True seed=True` |
-| pytest у контейнері | хмарна сесія Claude (sandbox-варіант Dockerfile, §7) | ✅ 237/237 (з `Pillow<13`) |
+| pytest у контейнері | хмарна сесія Claude (sandbox-варіант Dockerfile, §9) | ✅ 237/237 (з `Pillow<13`) |
 | `bake --pack` → ZIP у `./_archive` | хмарна сесія | ✅ (на порожньому датасеті) |
 | Імпорти `cellpose / instanseg / ultralytics / cellsegkit.SegmenterFactory` у `segmentation` | хмарна сесія | ✅ |
 | Реальний прогін сегментації з завантаженням моделей | — | ❌ не перевірено |
 | Редактор на реальному датасеті `vesicles_good` у Docker | — | ❌ не перевірено |
+| Linux-лаунчер (2026-10-31): `--hidden` успіх, «вже працює», падіння → `show_error.sh`, ручний режим + справжній Ctrl+C (pty `\x03`) → контейнер зупинено, `create_shortcuts.sh` | хмарна сесія, не-root користувач у групі docker | ✅ файли в `data/`, `_archive/` належать користувачу; pytest 237/237 від не-root |
+| Linux-лаунчер з GUI (zenity, термінал при помилці, ярлик у меню) | — | ❌ не перевірено (нема дисплея) |
+| Windows-лаунчер `MaskPicker.ps1` / `create_shortcuts.bat` | — | ❌ не перевірено (тільки Windows) |
 
-## 7. Як тестувати Docker у хмарній сесії Claude Code (нотатка для AI-асистента)
+## 9. Як тестувати Docker у хмарній сесії Claude Code (нотатка для AI-асистента)
 
 Хмарний контейнер має обмежену мережу. Що спрацювало:
 - Демон не запущений → `dockerd > <scratchpad>/dockerd.log 2>&1 &` (сесія працює від root).
@@ -115,3 +160,12 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
 - Для `bake` у такому образі передати `-e NO_PROXY=127.0.0.1 -e no_proxy=127.0.0.1`, інакше `urllib`
   шле запит до власного сервера через проксі й чекає 30 с до таймауту.
 - Тести: `docker compose run --rm --no-deps -w /app/apps/mask_picker --entrypoint python mask-picker -m pytest tests/ -q -p no:cacheprovider`.
+- `docker compose build` з override `build: {dockerfile: <scratchpad>, network: host}` **не працює** (compose
+  v5 збирає через bake і вимагає `--allow=network.host,fs.read`). Робочий шлях: зібрати образи вручну
+  `docker build --network host -f <scratchpad>/Dockerfile.sandbox --target … -t cryobiology/<name> .`, а для
+  `compose`/лаунчерів дати override з `build: !reset null` через `COMPOSE_FILE=docker-compose.yml:<override>`
+  (тоді `up --build` нічого не збирає й бере готовий образ).
+- Лаунчери тестувати від **не-root** користувача (`useradd`, `usermod -aG docker`, `chgrp docker
+  /var/run/docker.sock`, копія репо в його `$HOME`): від root `mkdir data` створює root-папку і тест хибно падає.
+- Ctrl+C у ручному режимі: `timeout -s INT … script` НЕ імітує клавіатуру; писати `\x03` у pty (`pty.fork`).
+

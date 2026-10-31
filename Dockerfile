@@ -35,6 +35,10 @@ RUN pip install -r apps/mask_picker/requirements.txt tqdm psutil
 
 COPY . .
 
+# HOME / кеш matplotlib — у /tmp, щоб працювало й не від root (user: MP_UID на Linux, див. docker-compose.yml).
+ENV HOME=/tmp \
+    MPLCONFIGDIR=/tmp/matplotlib
+
 EXPOSE 5000
 # 0.0.0.0 — щоб сервер був доступний з-поза контейнера; браузер відкриваєш сам на хості.
 ENTRYPOINT ["python", "apps/mask_picker/app.py", "--host", "0.0.0.0", "--port", "5000", "--no-browser"]

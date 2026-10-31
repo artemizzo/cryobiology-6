@@ -1,0 +1,2 @@
+# Shell-скрипти мають LF навіть після checkout на Windows (інакше не запускаються на Linux).
+*.sh text eol=lf

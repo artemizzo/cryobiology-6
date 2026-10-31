@@ -45,8 +45,15 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
 - Змінюєш залежності (`requirements.txt`, нові імпорти) — онови й `Dockerfile`, перевір у лозі старту
   `features : cleanup=True export=True seed=True`.
 - `requirements.txt` має лише нижні межі → нові версії бібліотек ламають код. Вже був випадок: Pillow 13 →
-  `bake_all.py --pack` падає; закріплено `Pillow<13` (справжній фікс — `15_DOCKER.md` §5).
-- Тестування Docker у хмарній сесії має обходи мережі (Docker Hub 429, apt/pytorch/HF заблоковані) — `15_DOCKER.md` §7.
+  `bake_all.py --pack` падає; закріплено `Pillow<13` (справжній фікс — `15_DOCKER.md` §7).
+- Тестування Docker у хмарній сесії має обходи мережі (Docker Hub 429, apt/pytorch/HF заблоковані) — `15_DOCKER.md` §9.
+- **Ярлики** (`15_DOCKER.md` §5): `create_shortcuts.bat|sh` → ярлик «Mask Picker» → `tools/launchers/docker/MaskPicker.ps1 -Hidden`
+  (Windows) / `mask-picker.sh --hidden` (Linux): сам стартує Docker, віконце-статус, браузер. Рішення користувача:
+  **при помилці — консоль із сирим логом** (`_logs/launcher.log` + `docker compose logs`), НЕ кастомне повідомлення.
+  Без `-Hidden`/`--hidden` — ручний режим з консоллю (для розробки). `.ps1` — UTF-8 з BOM (не прибирати).
+- Linux: контейнери `mask-picker`/`bake` працюють від `MP_UID:MP_GID` (з `.env`), не root.
+- **Відоме обмеження:** у Docker не працюють native-діалоги вибору папки (кнопки «Змінити» workspace і
+  «Зберегти у» експорту, `tkinter` у `routes/api_workspace.py`) — `15_DOCKER.md` §6. Фікс потребує зміни коду, не зроблено.
 
 Основна платформа користувача — **Windows** (`.bat`-лаунчери в корені), шляхи мають лишатись переносними.
 
