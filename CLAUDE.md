@@ -63,7 +63,9 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   Пояснювати йому простою мовою, українською, без жаргону; не вважати, що він знає git/Python/Docker.
 - Гілки: працюємо в `main`. `docker-setup` злита в `main` (2026-10-30), більше не потрібна.
 - У користувача: Windows 11, Docker Desktop (WSL2) встановлено; проєкт склоновано git-ом у
-  `Documents\cryobiology-6` (переведено на `main`); редактор у Docker запускається ✅ (2026-10-30).
+  `Documents\cryobiology-6` (переведено на `main`); редактор у Docker запускається ✅ (2026-10-30);
+  ярлик «Mask Picker» створено й перевірено ✅ (2026-10-31). Docker Desktop встановлено per-user
+  (`%LOCALAPPDATA%\Programs\DockerDesktop`, не Program Files).
   Даних `data/vesicles_good` (Google Drive) на ПК ще нема. Python локально не ставився.
 - Хмарна сесія Claude Code не запускає код з репо без дозволу (класифікатор безпеки) — попросити дозвіл, якщо треба.
 

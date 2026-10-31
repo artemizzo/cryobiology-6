@@ -146,7 +146,8 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
 | Редактор на реальному датасеті `vesicles_good` у Docker | — | ❌ не перевірено |
 | Linux-лаунчер (2026-10-31): `--hidden` успіх, «вже працює», падіння → `show_error.sh`, ручний режим + справжній Ctrl+C (pty `\x03`) → контейнер зупинено, `create_shortcuts.sh` | хмарна сесія, не-root користувач у групі docker | ✅ файли в `data/`, `_archive/` належать користувачу; pytest 237/237 від не-root |
 | Linux-лаунчер з GUI (zenity, термінал при помилці, ярлик у меню) | — | ❌ не перевірено (нема дисплея) |
-| Windows-лаунчер `MaskPicker.ps1` / `create_shortcuts.bat` | — | ❌ не перевірено (тільки Windows) |
+| Windows-лаунчер `MaskPicker.ps1 -Hidden` / `create_shortcuts.bat` (2026-10-31): автозапуск Docker Desktop (per-user install в `%LOCALAPPDATA%\Programs\DockerDesktop`), віконце-статус, браузер; «вже працює»; консоль із логом при помилці | ПК користувача, Windows 11 | ✅ (після 2 фіксів: пошук Docker Desktop, перевірка на 127.0.0.1) |
+| Windows: ручний режим `MaskPicker.ps1` без `-Hidden` | — | ❌ не перевірено |
 
 ## 9. Як тестувати Docker у хмарній сесії Claude Code (нотатка для AI-асистента)
 
