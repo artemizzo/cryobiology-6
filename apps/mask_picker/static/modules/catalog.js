@@ -5,7 +5,7 @@
 
 import { $, $$, fmtTime, showToast } from "./util.js";
 import { api } from "./api.js";
-import { state, currentItem, filtered } from "./state.js";
+import { state, currentItem, filtered, MANUAL_MODEL, MANUAL_MODEL_TITLE } from "./state.js";
 import { refreshPolygonOverlaysForCurrent } from "./polyoverlay.js";
 
 let editorRef = null;
@@ -108,7 +108,7 @@ export function renderWorkspace() {
     variants.push({
       key: m,
       keyLabel: String(idx + 1),
-      name: m,
+      name: m === MANUAL_MODEL ? MANUAL_MODEL_TITLE : m,
       src: `/api/overlay/${encodeURIComponent(m)}/${encodeURIComponent(it.stem)}`,
       selectable: true,
     });

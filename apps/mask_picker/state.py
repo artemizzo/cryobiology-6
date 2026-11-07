@@ -172,6 +172,75 @@ class ModelSource:
         return None
 
 
+MANUAL_MODEL = "manual"
+
+
+@dataclass
+class ManualModelSource(ModelSource):
+    """Псевдо-модель «ручна розмітка»: доступна для КОЖНОГО фото, навіть без
+    виходу сегментації. Її «raw output» — порожня маска (усі пікселі = 0) і
+    overlay = копія оригіналу; усе розмічається полігонами. Файли
+    (output/manual/{npy,overlay}/<stem>) створюються ліниво `ensure_base` при
+    першому використанні і далі, як і будь-який raw output, НЕ змінюються.
+    Тому решта пайплайну (select, cleanup, polygons, groups, bake, export)
+    працює з нею як зі звичайною моделлю.
+    """
+    images_dir: Optional[Path] = None
+
+    def _original(self, stem: str) -> Optional[Path]:
+        if not self.images_dir:
+            return None
+        for s in (stem, f"Копия {stem}"):
+            for ext in IMAGE_EXTS:
+                p = self.images_dir / f"{s}{ext}"
+                if p.exists():
+                    return p
+        return None
+
+    def has_image(self, stem: str) -> bool:
+        return self._original(stem) is not None
+
+    def overlay_path(self, stem: str) -> Optional[Path]:
+        # До матеріалізації показуємо сам оригінал (картка в каталозі).
+        return super().overlay_path(stem) or self._original(stem)
+
+    def ensure_base(self, stem: str) -> bool:
+        """Створити порожню маску + overlay для stem, якщо їх ще нема.
+        Повертає False, якщо оригіналу нема або numpy/PIL недоступні."""
+        src = self._original(stem)
+        if src is None or np is None or Image is None:
+            return False
+        npy_path = self.npy_dir / f"{stem}.npy"
+        if npy_path.exists() and super().overlay_path(stem):
+            return True
+        with Image.open(src) as im:
+            w, h = im.size
+            self.overlay_dir.mkdir(parents=True, exist_ok=True)
+            if not super().overlay_path(stem):
+                if src.suffix.lower() in OVERLAY_EXTS:
+                    shutil.copy2(src, self.overlay_dir / f"{stem}{src.suffix.lower()}")
+                else:
+                    im.convert("RGB").save(self.overlay_dir / f"{stem}.png")
+        if not npy_path.exists():
+            self.npy_dir.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(dir=str(self.npy_dir), suffix=".npy.tmp")
+            os.close(fd)
+            with open(tmp, "wb") as f:
+                np.save(f, np.zeros((h, w), dtype=np.uint16))
+            os.replace(tmp, npy_path)
+        return True
+
+
+def _manual_model(output_root: Path, images_dir: Optional[Path]) -> ManualModelSource:
+    d = output_root / MANUAL_MODEL
+    return ManualModelSource(
+        name=MANUAL_MODEL,
+        overlay_dir=d / "overlay",
+        npy_dir=d / "npy",
+        images_dir=images_dir,
+    )
+
+
 @dataclass
 class Config:
     images_dir: Path
@@ -192,7 +261,7 @@ class Config:
 # Model discovery & config loader
 # ---------------------------------------------------------------------------
 
-def _discover_models(output_root: Path) -> list[ModelSource]:
+def _discover_models(output_root: Path, images_dir: Optional[Path] = None) -> list[ModelSource]:
     """
     Авто-пошук моделей в output/.
 
@@ -202,9 +271,13 @@ def _discover_models(output_root: Path) -> list[ModelSource]:
     2) Якщо в самому output/ лежать overlay/, png/, ... — це legacy запуск,
        називаємо його '_legacy_root'.
     3) Порожні моделі (без жодного overlay-файлу) ігноруємо.
+    4) Якщо передано images_dir — наприкінці завжди додаємо псевдо-модель
+       «manual» (ручна розмітка, див. ManualModelSource).
     """
     models: list[ModelSource] = []
     if not output_root.exists():
+        if images_dir is not None:
+            models.append(_manual_model(output_root, images_dir))
         return models
 
     # Legacy: overlay/ прямо в output/
@@ -224,7 +297,8 @@ def _discover_models(output_root: Path) -> list[ModelSource]:
     for sub in sorted(output_root.iterdir()):
         if not sub.is_dir():
             continue
-        if sub.name in {"overlay", "png", "npy", "yolo", "_legacy", "_selected", "_skipped"}:
+        if sub.name in {"overlay", "png", "npy", "yolo", "_legacy", "_selected", "_skipped",
+                        MANUAL_MODEL}:
             continue
         ov = sub / "overlay"
         if ov.is_dir() and any(ov.iterdir()):
@@ -237,6 +311,8 @@ def _discover_models(output_root: Path) -> list[ModelSource]:
                     yolo_dir=sub / "yolo" if (sub / "yolo").is_dir() else None,
                 )
             )
+    if images_dir is not None:
+        models.append(_manual_model(output_root, images_dir))
     return models
 
 
@@ -292,7 +368,10 @@ def load_config(config_path: Optional[Path]) -> Config:
                 )
             )
 
-    models = explicit_models or _discover_models(output_root)
+    if explicit_models:
+        models = explicit_models + [_manual_model(output_root, images_dir)]
+    else:
+        models = _discover_models(output_root, images_dir)
 
     return Config(
         images_dir=images_dir,

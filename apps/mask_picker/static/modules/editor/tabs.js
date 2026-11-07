@@ -13,6 +13,7 @@ export const tabsMixin = {
   switchTab(tab) {
     if (tab !== "cleanup" && tab !== "polygons" && tab !== "groups") return;
     if (tab === this.state.activeTab) return;
+    if (this.state.polygons.repair) this._repairCancel("змінено таб");
     // Flush-on-switch: dirty → autosave (без close).
     const flushPoly = this.state.activeTab === "polygons" && this.state.polygons.dirty;
     const flushCleanup = this.state.activeTab === "cleanup" && this.state.cleanup.dirty;
@@ -166,6 +167,19 @@ export const tabsMixin = {
         hint.innerHTML = `✏️ <b>Draw</b>: клік = вершина. <kbd>Shift</kbd> (hold) = freehand. ` +
           `<kbd>Enter</kbd>/dblclick — замкнути. <kbd>Backspace</kbd> — прибрати вершину. ` +
           `<kbd>Esc</kbd> — скасувати. <kbd>E</kbd> — до edit.`;
+      } else if (this.state.polygons.repair) {
+        const r = this.state.polygons.repair;
+        hint.innerHTML = r.extend
+          ? `✂ <b>Домальовування</b>: клік = точка, <kbd>Shift</kbd> (hold) = freehand, ` +
+            `<kbd>Backspace</kbd> — прибрати точку. Клік по іншому кінцю — з'єднати / замкнути. ` +
+            `<kbd>Esc</kbd> — зупинити домальовування.`
+          : `✂ <b>Розрив</b> (фрагментів: ${r.pieces.length}): клік по лінії/точці — розірвати ще раз. ` +
+            `<kbd>Shift</kbd>+клік — обрати фрагмент, <kbd>Delete</kbd> — видалити його. ` +
+            `Клік по кінцю (біле коло) — домальовувати. <kbd>Enter</kbd> — замкнути. ` +
+            `<kbd>Ctrl+Z</kbd> — крок назад, <kbd>Esc</kbd> — скасувати розрив.`;
+      } else if (this.state.polygons.tool === "break") {
+        hint.innerHTML = `✂ <b>Розрив</b>: клік по ребру (з'являться дві точки-кінці) або по точці ` +
+          `полігона — розірвати контур у цьому місці. <kbd>B</kbd>/<kbd>E</kbd> — вийти.`;
       } else if (this.state.polygons.tool === "pick") {
         hint.innerHTML = `🎯 <b>Pick</b>: клік по клітині на масці → seed тільки цього інстанса. ` +
           `Rejected не беруться. <kbd>D</kbd> — до draw, <kbd>E</kbd> — до edit.`;

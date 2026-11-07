@@ -54,7 +54,7 @@ def switch_workspace(cfg: Config, state: StateStore, catalog: CatalogService,
     for d in (cfg.images_dir, cfg.output_root, cfg.selected_dir,
               cfg.skipped_dir, cfg.polygons_dir, cfg.groups_dir):
         d.mkdir(parents=True, exist_ok=True)
-    cfg.models = _discover_models(cfg.output_root)
+    cfg.models = _discover_models(cfg.output_root, cfg.images_dir)
     state.reload(cfg.selected_dir.parent / "selections.json")
     catalog.invalidate()
     return {

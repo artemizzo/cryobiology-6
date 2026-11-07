@@ -5,7 +5,7 @@
 
 import { $, showToast } from "./util.js";
 import { api } from "./api.js";
-import { state, appLabels, DEFAULT_LABEL } from "./state.js";
+import { state, appLabels, DEFAULT_LABEL, MANUAL_MODEL } from "./state.js";
 
 let editorRef = null;
 export function setEditor(ed) { editorRef = ed; }
@@ -30,7 +30,8 @@ export function openMultiSeedModal() {
   }
   const tbody = $("#multiSeedList");
   if (!tbody) return;
-  const models = (state.config && state.config.models) || [];
+  // «manual» — порожня маска, seed-ити з неї нічого → не джерело.
+  const models = ((state.config && state.config.models) || []).filter((m) => m !== MANUAL_MODEL);
   if (!models.length) {
     showToast("Немає доступних моделей у workspace", "err", 2000);
     return;
@@ -40,7 +41,7 @@ export function openMultiSeedModal() {
   // Юзер свідомо вмикає лише ті класи, які хоче seed-ити. Випадковий Apply
   // нічого не змінює. localStorage prefs зберігає лише останній model вибір
   // per-label, не checked-state (так само як перед v2.0.0).
-  const activeModel = editorRef.state.model || "";
+  const activeModel = editorRef.state.model === MANUAL_MODEL ? "" : (editorRef.state.model || "");
   tbody.innerHTML = "";
   appLabels.forEach((lbl) => {
     const tr = document.createElement("tr");

@@ -19,6 +19,8 @@ SoT — `pg.shapes` (браузер) → `polygons/<stem>.json` (LabelMe envelop
   (не mid-draft) захоплює її для drag.
 - **`"pick"`**: клік по інстансу → seed-from-mask його контур у полігон (клік по існуючому shape →
   auto-switch у `null`+select).
+- **`"break"`** (B, `editor/repair.js`): розрив контуру → видалення ділянки → домальовування →
+  з'єднання/замикання. Окремий сеанс ремонту, відкриті лінії не потрапляють у `pg.shapes` → [`16`](16_MANUAL_MODE.md)§2.
 - **Toggle:** повторний клік по активному tool / хоткей / Esc → `null`. open→null; `KeyE`→null.
 
 ## 2. Диспетч подій (важливо — спільний SVG для polygons І groups)

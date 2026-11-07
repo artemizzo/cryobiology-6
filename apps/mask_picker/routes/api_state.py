@@ -72,6 +72,8 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         if prev_cleanup.get("model") == model_name:
             carry_cleanup = prev_cleanup  # та сама модель — зберігаємо rejected
 
+        if hasattr(m, "ensure_base"):   # «manual»: порожня маска + overlay
+            m.ensure_base(stem)
         copied = _copy_model_files_for_stem(cfg, m, stem)
 
         entry = {

@@ -16,7 +16,7 @@ python app.py --workspace ../../data/<dataset>   # → http://127.0.0.1:5000
 ## Тести
 ```bash
 # Windows: $env:MPLBACKEND="Agg"  |  Linux/macOS: export MPLBACKEND=Agg
-python -m pytest tests/ -q          # 237 passed
+python -m pytest tests/ -q          # 242 passed
 ```
 
 ## Структура

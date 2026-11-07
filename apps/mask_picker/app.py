@@ -39,7 +39,7 @@ from state import (  # noqa: F401
     CLEANUP_AVAILABLE, EXPORT_AVAILABLE, CV2_AVAILABLE,
     HERE, PROJECT_ROOT, DATA_ROOT,
     IMAGE_EXTS, OVERLAY_EXTS,
-    Config, ModelSource, StateStore,
+    Config, ModelSource, StateStore, MANUAL_MODEL, _manual_model,
     DEFAULT_LABEL_CLASSES,
     _atomic_write_json, _utc_iso, _utc_stamp,
     _discover_models, load_config,
@@ -208,7 +208,7 @@ def main():
         for d in (cfg.images_dir, cfg.output_root, cfg.selected_dir,
                   cfg.skipped_dir, cfg.polygons_dir, cfg.groups_dir):
             d.mkdir(parents=True, exist_ok=True)
-        cfg.models = _discover_models(cfg.output_root)
+        cfg.models = _discover_models(cfg.output_root, cfg.images_dir)
         workspace_mode = True
     # ---- CLI overrides (non-workspace) -----------------------------------
     else:
@@ -216,7 +216,7 @@ def main():
             cfg.images_dir = args.images_dir.resolve()
         if args.output_root:
             cfg.output_root = args.output_root.resolve()
-            cfg.models = _discover_models(cfg.output_root)
+            cfg.models = _discover_models(cfg.output_root, cfg.images_dir)
         if args.selected_dir:
             cfg.selected_dir = args.selected_dir.resolve()
         if args.skipped_dir:
@@ -225,6 +225,9 @@ def main():
             cfg.polygons_dir = args.polygons_dir.resolve()
         if args.groups_dir:
             cfg.groups_dir = args.groups_dir.resolve()
+        # «manual» має бачити фінальні images_dir/output_root (після override-ів).
+        cfg.models = [m for m in cfg.models if m.name != MANUAL_MODEL] + [
+            _manual_model(cfg.output_root, cfg.images_dir)]
 
     print("=" * 68)
     print("Mask Picker" + ("  [workspace mode]" if workspace_mode else ""))
@@ -239,12 +242,11 @@ def main():
         print(f"  workspace    : {cfg.workspace_dir}")
     print(f"  models       : {[m.name for m in cfg.models] or '(none)'}")
     print(f"  features     : cleanup={CLEANUP_AVAILABLE} export={EXPORT_AVAILABLE} seed={CV2_AVAILABLE}")
-    if not cfg.models and not workspace_mode:
+    if not any(m.name != MANUAL_MODEL for m in cfg.models) and not workspace_mode:
+        # Без масок моделей працює лише ручна розмітка («manual») — не помилка.
         print()
-        print("  [ERROR] Не знайдено жодної моделі з масками!")
-        print(f"  Перевір що у {cfg.output_root} є підпапки з overlay/ всередині.")
-        print("  Наприклад: output/cyto2/overlay/db_img_0001.png")
-        sys.exit(1)
+        print("  [WARN] Не знайдено жодної моделі з масками — доступна лише ручна розмітка.")
+        print(f"  Маски моделей шукаються у {cfg.output_root}/<модель>/overlay/.")
     if not cfg.images_dir.exists() and not workspace_mode:
         print()
         print(f"  [ERROR] Папка зображень не існує: {cfg.images_dir}")

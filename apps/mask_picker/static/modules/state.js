@@ -2,6 +2,10 @@
 // stay in sync after setAppLabels reassigns the underlying array.
 
 export const DEFAULT_LABEL = "nucleus";
+// Псевдо-модель «ручна розмітка» (backend state.ManualModelSource): порожня маска,
+// усе малюється полігонами. Доступна для кожного фото.
+export const MANUAL_MODEL = "manual";
+export const MANUAL_MODEL_TITLE = "✋ Ручна розмітка";
 
 export const state = {
   catalog: [],

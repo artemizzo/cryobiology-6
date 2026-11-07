@@ -14,6 +14,8 @@ import { openMultiSeedModal } from "../multiseed.js";
 export const keysMixin = {
   onKey(e) {
     const ctrl = e.ctrlKey || e.metaKey;
+    // Сеанс розриву полігона (repair.js) перехоплює Esc/Enter/Delete/Backspace/Ctrl+Z.
+    if (this.state.activeTab === "polygons" && this._repairOnKey(e)) return;
     // Spacebar: у polygons + draw + draft з ≥3 точками закриває draft,
     // інакше — pan mode (як було, спільне для обох табів).
     if (e.code === "Space") {
@@ -134,6 +136,7 @@ export const keysMixin = {
     if (e.code === "KeyD") { e.preventDefault(); this._setPolyTool("draw"); return; }
     if (e.code === "KeyE") { e.preventDefault(); this._setPolyTool(null); return; }
     if (e.code === "KeyP") { e.preventDefault(); this._setPolyTool("pick"); return; }
+    if (e.code === "KeyB") { e.preventDefault(); this._setPolyTool("break"); return; }
     // Day 3c′: S = Seed all (одна модель), Shift+S = Multi-seed (cross-model).
     if (e.code === "KeyS" && !ctrl) {
       e.preventDefault();

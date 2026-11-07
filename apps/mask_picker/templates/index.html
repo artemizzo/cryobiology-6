@@ -478,7 +478,10 @@
         <div class="cleanup__toolmode" role="group" title="Інструмент">
           <button class="btn btn--mini" data-poly-tool="draw" title="Малювати полігон (D). Клік ще раз або Esc — вимкнути. За замовч.: редагування кліком по полігону/вершині/ребру">✏️ Draw</button>
           <button class="btn btn--mini" data-poly-tool="pick" title="Seed однієї клітини: клікни по інстансу на масці (P)">🎯 Pick</button>
+          <button class="btn btn--mini" data-poly-tool="break" title="Розірвати контур полігона (B): клік по ребру або точці. Далі: розірвати ще раз, видалити фрагмент, домалювати від кінця, з'єднати/замкнути">✂ Розрив</button>
         </div>
+        <button id="polyRepairDelete" class="btn btn--ghost" title="Видалити обраний фрагмент розірваного контуру (Delete)" disabled>🗑 Фрагмент</button>
+        <button id="polyRepairClose" class="btn btn--ghost" title="Замкнути розірваний контур: кінці з'єднуються прямою (Enter)" disabled>✔ Замкнути</button>
         <button id="polyMultiSeed" class="btn btn--ghost" title="Cross-model seed (Shift+S): для кожного класу — своя модель-джерело. Напр. nucleus з unet, vesicle з sam2.">🎯 Multi-seed</button>
         <button id="polySeed" class="btn btn--ghost" title="Seed all (S): завантажити контури з УСІЄЇ обраної маски">📐 Seed all</button>
         <button id="polyAlign" class="btn btn--ghost" title="Вирівняти вибрані вершини по лінії (2 опорні + інші)" disabled>📏 Align</button>

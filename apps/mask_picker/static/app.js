@@ -17,7 +17,7 @@
 
 import { $, $$, closeModal } from "./modules/util.js";
 import { api } from "./modules/api.js";
-import { state, appLabels, setAppLabels } from "./modules/state.js";
+import { state, appLabels, setAppLabels, MANUAL_MODEL } from "./modules/state.js";
 import { openZoom, quitApp } from "./modules/zoom_modal.js";
 import { openStats } from "./modules/stats.js";
 import {
@@ -63,7 +63,7 @@ setWorkspaceCatalogCallbacks(reloadCatalog, renderAll);
 async function init() {
   state.config = await api("/api/config");
   state.models = state.config.models;
-  $("#projectBadge").textContent = `• ${state.models.length} model(s) • ${state.config.output_root.split(/[\\/]/).slice(-2).join("/")}`;
+  $("#projectBadge").textContent = `• ${state.models.filter((m) => m !== MANUAL_MODEL).length} model(s) • ${state.config.output_root.split(/[\\/]/).slice(-2).join("/")}`;
 
   if (state.config.workspace_mode) {
     const bar = $("#workspaceBar");

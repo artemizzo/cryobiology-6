@@ -423,7 +423,7 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         # selections.json у пам'ять (інакше catalog.build() використає старий стейт
         # і UI не показує ні Selected, ні cleanup rejected, ні базовий model
         # variant — лише фото + полігони) + інвалідуємо catalog.
-        cfg.models = _discover_models(cfg.output_root)
+        cfg.models = _discover_models(cfg.output_root, cfg.images_dir)
         state.reload(cfg.selected_dir.parent / "selections.json")
         catalog.invalidate()
 
@@ -987,7 +987,7 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         tmp.replace(ws_selections)
 
         # Перевідкрити моделі (нові output/<model>/) + перечитати state.
-        cfg.models = _discover_models(cfg.output_root)
+        cfg.models = _discover_models(cfg.output_root, cfg.images_dir)
         state.reload(ws_selections)
         catalog.invalidate()
 

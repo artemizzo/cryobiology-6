@@ -35,7 +35,7 @@ import {
   $, _hexToRgba, _pointInPoly, _projectPointOnSegment, showToast,
 } from "../util.js";
 import { api } from "../api.js";
-import { state, appLabels, getLabelColor, DEFAULT_LABEL } from "../state.js";
+import { state, appLabels, getLabelColor, DEFAULT_LABEL, MANUAL_MODEL } from "../state.js";
 
 const FREEHAND_MIN_DIST = 15;          // px у image-space між точками freehand
 const VERTEX_CLICK_PX    = 10;         // поріг "клік по вершині" у CSS-пікселях
@@ -45,14 +45,16 @@ const DBL_CLICK_MS       = 350;        // вікно ручної детекці
 
 export const polygonsMixin = {
   _setPolyTool(tool) {
-    // Tools: "draw", "pick", or null. null = default "navigate + edit":
-    // click a polygon/vertex/edge to edit it, click empty does nothing. Edit is
-    // no longer a separate button — it is simply the state when no tool is on.
-    if (tool !== "draw" && tool !== "pick" && tool !== null) return;
+    // Tools: "draw", "pick", "break" (розрив полігона, repair.js) or null.
+    // null = default "navigate + edit": click a polygon/vertex/edge to edit it,
+    // click empty does nothing. Edit is no longer a separate button — it is
+    // simply the state when no tool is on.
+    if (tool !== "draw" && tool !== "pick" && tool !== "break" && tool !== null) return;
     const pg = this.state.polygons;
     // Toggle off: clicking the already-active tool (or its hotkey) -> default.
     if (tool !== null && pg.tool === tool) tool = null;
     if (pg.tool === "draw" && tool !== "draw") this._polyCancelDraft();
+    if (pg.tool === "break" && tool !== "break") this._repairCancel("інструмент змінено");
     pg.tool = tool;
     this._toolbarPolygons().querySelectorAll("[data-poly-tool]").forEach((b) => {
       b.classList.toggle("btn--mini-active", b.dataset.polyTool === tool);
@@ -82,6 +84,12 @@ export const polygonsMixin = {
     const pt = this._svgCoordsFromEvent(e);
     if (!pt) return;
     pg.cursor = pt;
+
+    // Розрив полігона: увесь ввід — у сеанс ремонту (repair.js).
+    if (pg.tool === "break" || pg.repair) {
+      this._repairMouseDown(e, pt);
+      return;
+    }
 
     // Bug G (v1.16.2): edit-only ручна детекція double-click. Native dblclick
     // не долітає — _polyRedraw (innerHTML="") перебудовує SVG-ціль між
@@ -219,6 +227,11 @@ export const polygonsMixin = {
     if (!pt) return;
     pg.cursor = pt;
 
+    if (pg.tool === "break" || pg.repair) {
+      this._repairMouseMove(e, pt);
+      return;
+    }
+
     if (pg.tool === "draw") {
       // edit-in-draw: drag a vertex grabbed in Draw (mirror edit-mode drag).
       if (pg.draggingVertex) {
@@ -306,6 +319,7 @@ export const polygonsMixin = {
     }
     if (this.state.activeTab !== "polygons") return;
     const pg = this.state.polygons;
+    if (pg.tool === "break" || pg.repair) return;
 
     if (pg.tool === "draw" || pg.tool === "pick") {
       // edit-in-draw: finish a vertex drag started in Draw. Undo вже запушено
@@ -386,6 +400,7 @@ export const polygonsMixin = {
     const now = performance.now();
     if (now - (pg._dblHandledT || 0) < DBL_CLICK_MS) return;
     pg._dblHandledT = now;
+    if (pg.tool === "break" || pg.repair) return;
 
     if (pg.tool === "draw" && pg.draft) {   // mid-draft: dblclick closes polygon
       if (pg.draft.points.length >= 3) {
@@ -704,6 +719,11 @@ export const polygonsMixin = {
       showToast("Спершу обери модель (Pick або dropdown) — Seed потребує npy-маски", "err", 2500);
       return;
     }
+    if (s.model === MANUAL_MODEL) {
+      // Порожня маска: Seed all лише стер би наявні полігони.
+      showToast("Ручна розмітка: маски моделі нема. Готові контури з масок моделей — Multi-seed (Shift+S)", "err", 4000);
+      return;
+    }
     if (s.polygons.shapes.length) {
       if (!confirm(`Замінити поточні ${s.polygons.shapes.length} полігонів контурами з ${s.model}?`)) return;
     }
@@ -879,6 +899,11 @@ export const polygonsMixin = {
     const pg = this.state.polygons;
     $("#polyDeleteShape").disabled = pg.selectedShape < 0 && pg.selectedVertices.size === 0;
     $("#polyAlign").disabled = pg.selectedVertices.size < 3;
+    const r = pg.repair;
+    const btnDelPiece = $("#polyRepairDelete");
+    if (btnDelPiece) btnDelPiece.disabled = !r || r.selPiece < 0 || r.pieces.length <= 1;
+    const btnClose = $("#polyRepairClose");
+    if (btnClose) btnClose.disabled = !r || r.pieces.length !== 1;
     this._polyUpdateShapeLabelSelect();
   },
 
@@ -967,6 +992,7 @@ export const polygonsMixin = {
     layer.innerHTML = "";
     pg.shapes.forEach((sh, si) => {
       if (this._polyShapeIsRejected(sh)) return;
+      if (pg.repair && pg.repair.si === si) return;   // під ремонтом — малює repair.js
       const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
       const pts = sh.points.map((p) => `${p[0]},${p[1]}`).join(" ");
       poly.setAttribute("points", pts);
@@ -992,6 +1018,7 @@ export const polygonsMixin = {
     const r = Math.max(3, 7 / this.state.scale);
     pg.shapes.forEach((sh, si) => {
       if (this._polyShapeIsRejected(sh)) return;
+      if (pg.repair && pg.repair.si === si) return;
       const color = getLabelColor(sh.label || DEFAULT_LABEL);
       sh.points.forEach(([x, y], vi) => {
         const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -1016,6 +1043,7 @@ export const polygonsMixin = {
 
   _polyRedrawDraft() {
     const pg = this.state.polygons;
+    if (pg.repair) { this._repairRedraw(); return; }
     const layer = this._layerDraft();
     layer.innerHTML = "";
     if (!pg.draft || !pg.draft.points.length) return;

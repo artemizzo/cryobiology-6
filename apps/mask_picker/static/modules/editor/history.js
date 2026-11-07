@@ -155,6 +155,8 @@ export const historyMixin = {
   },
 
   _historyUndo() {
+    // Під час розриву полігона Ctrl+Z / кнопка ↶ — крок назад у сеансі (repair.js).
+    if (this.state.polygons.repair) { this._repairUndo(); return; }
     const h = this._historyEnsure();
     const entry = h.undo.pop();
     if (!entry) { showToast("Нема що відмінити", "info", 1000); return; }
@@ -168,6 +170,7 @@ export const historyMixin = {
   },
 
   _historyRedo() {
+    if (this.state.polygons.repair) return;
     const h = this._historyEnsure();
     const entry = h.redo.pop();
     if (!entry) return;

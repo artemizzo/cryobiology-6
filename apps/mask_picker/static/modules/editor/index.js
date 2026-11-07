@@ -54,6 +54,7 @@ import { polygonsMixin } from "./polygons.js";
 import { groupsMixin } from "./groups.js";
 import { keysMixin } from "./keys.js";
 import { historyMixin } from "./history.js";
+import { repairMixin } from "./repair.js";
 
 export const editor = {
   state: {
@@ -119,6 +120,7 @@ export const editor = {
       autosaveTimer: null,
       bgSource: "original",
       envelope: null,               // LabelMe обгортка (крім shapes)
+      repair: null,                 // сеанс розриву полігона (repair.js) або null
     },
 
     // --- GROUPS sub-state (Day 4-5 cell grouping) ---
@@ -196,6 +198,7 @@ export const editor = {
   ...groupsMixin,
   ...keysMixin,
   ...historyMixin,
+  ...repairMixin,
 
   // =================================================================
   //                              OPEN / CLOSE
@@ -249,6 +252,7 @@ export const editor = {
     pg.draggingVertex = null; pg.draggingGroup = null;
     pg.lasso = null; pg.freehand = null;
     pg.tool = null;   // default: navigate + edit (no tool active on open)
+    pg.repair = null;
     // Bug E (v1.16.1): Polygons-таб стартує на OVERLAY (було "original").
     // Юзер: хоче overlay постійно, оригінал лише за явним вибором або hold-O.
     // (Старий коментар Day 9 про пікселізацію overlay більше не актуальний —
@@ -434,6 +438,7 @@ export const editor = {
 
   async close(skipFlush = false) {
     if (!this.state.open) return;
+    if (this.state.polygons.repair) this._repairCancel("редактор закрито");
     if (!skipFlush) {
       // flushIfDirty() сам викликає close(true) у кінці — делегуємо
       // повністю, щоб close-логіка не виконувалась двічі.

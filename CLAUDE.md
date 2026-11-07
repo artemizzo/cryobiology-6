@@ -6,7 +6,7 @@ Cryobiology V / **Mask Picker**: human-in-the-loop пайплайн доразм
 
 ## Де що читати (не дублюю — тут лише вказівники)
 - `README.md` — огляд, швидкий старт. `INSTALL.md` — встановлення, ваги, чистий ПК.
-- `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
+- `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
 - `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-014), відкриті пункти — там.
 - `docs/CODE_AUDIT_PRINCIPLES.md` — **обовʼязково перед правками** (див. нижче).
 - `docs/TECHNICAL_REPORT.md`, `docs/PROJECT_JOURNEY.md` — історія й рішення.
@@ -30,7 +30,7 @@ python apps/segmentation/run_segmentation.py --data-dir data/<dataset>   # кр�
 python apps/mask_picker/app.py --workspace data/<dataset>                # крок 2 → http://127.0.0.1:5000
 python tools/launchers/bake_all.py --data-dir data/<dataset> --pack      # deliverable
 python tools/make_sandbox.py                                             # безпечна копія датасету для експериментів
-cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 237 passed)
+cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 242 passed)
 ```
 
 ### Docker (основний спосіб запуску для користувача)
@@ -72,7 +72,13 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
 ## Ключові правила (з історії багів — порушення = регресії десинку)
 - **Перед будь-якою правкою** пройти чекліст `docs/CODE_AUDIT_PRINCIPLES.md`: назвати концепт, знайти
   ВСІ його представлення і консюмерів (front + back + bake + export), оновити їх разом.
-- `output/<model>/` (raw вихід сегментації) — **read-only**, ніколи не змінювати.
+- `output/<model>/` (raw вихід сегментації) — **read-only**, ніколи не змінювати. Виняток: `output/manual/`
+  (псевдо-модель ручної розмітки) MP створює сам, один раз на stem (порожня маска + копія оригіналу) — далі теж read-only.
+- **Ручна розмітка = псевдо-модель `manual`** (`state.ManualModelSource`, завжди останній у `cfg.models`):
+  для решти коду — звичайна модель. Нові місця, що читають `m.npy_dir` напряму, мають викликати
+  `m.ensure_base(stem)` (або йти через `cleanup._find_npy_for`). → `16_MANUAL_MODE.md`.
+- **Розрив полігона** (`editor/repair.js`, tool `"break"`): відкриті лінії живуть лише в `pg.repair`,
+  commit пише у той самий індекс shape (групи не ламаються). Не зберігати відкриті лінії в `pg.shapes`.
 - Три ID-простори: `raw_iid` (модель), reserved-ID полігонів `50000+`, dense `1..N` лише у deliverable.
   Не змішувати (див. `01_…`, `09_BAKING_AND_RESERVED_IDS.md`).
 - Bake — тільки на «Зберегти все» / Finalize, не в інтерактиві; групування в UI рахується на фронті.

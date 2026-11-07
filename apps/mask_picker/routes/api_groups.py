@@ -88,6 +88,8 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         # Fallback: raw model output
         for m in cfg.models:
             if m.name == model and m.npy_dir:
+                if hasattr(m, "ensure_base"):   # «manual»: ліниво створити порожню маску
+                    m.ensure_base(stem)
                 raw = m.npy_dir / f"{stem}.npy"
                 if raw.exists():
                     return raw
@@ -334,6 +336,8 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         if npy_path is None:
             for m in cfg.models:
                 if m.name == model and m.npy_dir:
+                    if hasattr(m, "ensure_base"):
+                        m.ensure_base(stem)
                     raw = m.npy_dir / f"{stem}.npy"
                     if raw.exists():
                         npy_path = raw

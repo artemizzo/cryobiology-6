@@ -84,7 +84,10 @@ from state import (
 # ---------------------------------------------------------------------------
 
 def _find_npy_for(model: ModelSource, stem: str) -> Optional[Path]:
-    """Шукаємо .npy для цього stem у npy_dir моделі (враховуємо 'Копия ...')."""
+    """Шукаємо .npy для цього stem у npy_dir моделі (враховуємо 'Копия ...').
+    Для псевдо-моделі «manual» спершу ліниво створюємо порожню маску."""
+    if hasattr(model, "ensure_base"):
+        model.ensure_base(stem)
     if not model.npy_dir or not model.npy_dir.exists():
         return None
     for s in (stem, f"Копия {stem}"):

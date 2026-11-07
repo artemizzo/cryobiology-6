@@ -224,7 +224,7 @@ def pack_zip(data_dir: Path, archive_dir: Path, zip_name: str | None = None,
         labels_file=data_dir / "labels.json",
         group_classes_file=data_dir / "group_classes.json",
         workspace_dir=data_dir,
-        models=_discover_models(data_dir / "output"),
+        models=_discover_models(data_dir / "output", data_dir / "images"),
     )
 
     def _load_npy_2d(p: Path):
