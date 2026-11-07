@@ -217,6 +217,29 @@ def _scan_stems_in_dir(root: Path) -> list[str]:
     return sorted(s for s in stems if s)
 
 
+def _normalize_flat_source(src_root: Path) -> None:
+    """
+    «Плоске» джерело — просто фото (у корені ZIP або в довільних папках, без
+    структури workspace: images/, polygons/, selected/… і без selections.json).
+    Переносимо всі фото у src_root/images/, щоб далі scan/apply працювали з ним
+    як зі звичайним workspace-експортом. Структурне джерело не чіпаємо.
+    """
+    files = [p for p in src_root.rglob("*") if p.is_file()]
+    if any(p.name == "selections.json" for p in files):
+        return
+    if any(_find_marker_index(p.relative_to(src_root).parts) is not None for p in files):
+        return
+    images = src_root / "images"
+    for p in files:
+        rel = p.relative_to(src_root).parts
+        if p.suffix.lower() not in _IMPORT_IMG_EXTS:
+            continue
+        if any(x.startswith(".") or x == "__MACOSX" for x in rel):
+            continue   # службові файли macOS / приховані
+        images.mkdir(exist_ok=True)
+        shutil.move(str(p), str(images / p.name))
+
+
 def _copy_stem_artifacts(src_root: Path, dst_ws: Path, stem: str) -> int:
     """
     Копіює всі файли одного stem з розпакованого src у workspace dst,
@@ -905,9 +928,11 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
                     sources.append({"idx": idx, "name": name, "stems": [],
                                     "count": 0, "error": f"пошкоджений ZIP: {e}"})
                     continue
+                _normalize_flat_source(src_dir)   # ZIP «просто з фото» → images/
                 stems = _scan_stems_in_dir(src_dir)
             elif ext in _IMPORT_IMG_EXTS:
-                f.save(str(src_dir / name))
+                (src_dir / "images").mkdir(exist_ok=True)
+                f.save(str(src_dir / "images" / name))
                 stems = [_norm_stem(Path(name).stem)]
             else:
                 sources.append({"idx": idx, "name": name, "stems": [],
@@ -952,6 +977,10 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
             except Exception:
                 current = {}
 
+        def _local_has_photo(stem: str) -> bool:
+            return any((cfg.images_dir / f"{s}{ext}").exists()
+                       for s in (stem, f"Копия {stem}") for ext in _IMPORT_IMG_EXTS)
+
         total_files = 0
         merged: list[str] = []      # imported переміг → застосовано
         kept_local: list[str] = []  # local новіший → залишено
@@ -970,6 +999,11 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
                     imp = imported_sel.get(stem)
                     loc = current.get(stem)
                     winner = _decide_import_winner(imp, loc)
+                    # Нове фото без розмітки (напр. ZIP «просто з фото»): стану нема
+                    # ні там, ні тут, і локально такого фото ще нема → додаємо.
+                    if (winner == "local" and imp is None and loc is None
+                            and not _local_has_photo(stem)):
+                        winner = "imported"
                     if winner == "imported":
                         total_files += _copy_stem_artifacts(
                             src_dir, cfg.workspace_dir, stem)

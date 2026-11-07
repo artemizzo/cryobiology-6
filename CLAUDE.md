@@ -7,7 +7,7 @@ Cryobiology V / **Mask Picker**: human-in-the-loop пайплайн доразм
 ## Де що читати (не дублюю — тут лише вказівники)
 - `README.md` — огляд, швидкий старт. `INSTALL.md` — встановлення, ваги, чистий ПК.
 - `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
-- `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-014), відкриті пункти — там.
+- `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-015), відкриті пункти — там.
 - `docs/CODE_AUDIT_PRINCIPLES.md` — **обовʼязково перед правками** (див. нижче).
 - `docs/TECHNICAL_REPORT.md`, `docs/PROJECT_JOURNEY.md` — історія й рішення.
 
@@ -30,7 +30,7 @@ python apps/segmentation/run_segmentation.py --data-dir data/<dataset>   # кр�
 python apps/mask_picker/app.py --workspace data/<dataset>                # крок 2 → http://127.0.0.1:5000
 python tools/launchers/bake_all.py --data-dir data/<dataset> --pack      # deliverable
 python tools/make_sandbox.py                                             # безпечна копія датасету для експериментів
-cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 242 passed)
+cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 244 passed)
 ```
 
 ### Docker (основний спосіб запуску для користувача)

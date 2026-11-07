@@ -143,9 +143,11 @@ async function runBakeAll(rebakeAll) {
 let _importScanId = null;
 let _importSources = [];
 
+// Номер фото = ОСТАННЄ число в імені («seq_1_0002» → 2, «db_img_0101» → 101).
+// Перше число ламало діапазон для серій з номером серії на початку.
 function _stemNum(stem) {
-  const m = String(stem).match(/\d+/);
-  return m ? parseInt(m[0], 10) : 0;
+  const m = String(stem).match(/\d+/g);
+  return m ? parseInt(m[m.length - 1], 10) : 0;
 }
 
 function _renderImportMergeRows() {

@@ -7,7 +7,7 @@
 > *Human-in-the-loop pipeline to turn rough ML cell-segmentation masks into a clean,
 > grouped ground-truth dataset (instance + semantic masks + cell groups).*
 
-**Версія 2.0.0** · Apache-2.0 · pytest **242/242** · Python 3.10+
+**Версія 2.0.0** · Apache-2.0 · pytest **244/244** · Python 3.10+
 
 ```
  apps/segmentation  ─▶  data/<dataset>/output/  ─▶  apps/mask_picker  ─▶  deliverable
@@ -36,7 +36,7 @@
 - Стабільні ID між запіканнями (reserved-range) → групи не «дрейфують».
 - Глобальний хронологічний undo/redo на всі інструменти.
 - Lazy-bake + автозбереження без гонок; фінальний deliverable у dense `1..N`.
-- **242 автотести**, повна архітектурна документація, browser-верифіковані UI-фікси.
+- **244 автотести**, повна архітектурна документація, browser-верифіковані UI-фікси.
 
 ## Складові
 | Шлях | Що |

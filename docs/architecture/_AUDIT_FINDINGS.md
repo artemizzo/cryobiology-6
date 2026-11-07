@@ -160,6 +160,18 @@
 > resume, UTF-8 fix). Залежності: `shared/cellsegkit` (in-repo) + pip (instanseg/ultralytics) +
 > `cryobiology4/weights/` для кастомних моделей (built-in cyto2 працює без них)._
 
+### F-015 — Імпорт «просто фото» (ZIP без структури / окремий jpg) нічого не імпортував   🟠 medium · ✅ fixed (2026-11-07)
+- **Код:** `routes/api_workspace.py` import-scan/apply (Day 8 merge-import). `_scan_stems_in_dir` бачив фото лише
+  у папці `images/` → плоский ZIP «фото не знайдено». Окремий jpg зберігався у `srcN/<name>` (без маркера) →
+  `_copy_stem_artifacts` його не копіював. І `_decide_import_winner(None, None)` = `local` → фото без стану
+  (і без локального фото) пропускалось.
+- **Симптом (у мейнтейнера):** «📥 Імпорт» архіву з jpg → «seq_1.zip — фото не знайдено».
+- **Фікс:** `_normalize_flat_source` — джерело без маркерів і без selections.json → усі фото у `src/images/`
+  (пропускає `__MACOSX`/приховані); окремий файл → `src/images/`; у apply нове фото (нема стану ні там, ні тут і
+  нема локального фото) → копіюється. Локальне фото з тим самим іменем НЕ перезаписується. Діапазон у вікні
+  імпорту — за ОСТАННІМ числом в імені (`seq_1_0002` → 2). Тести: `test_import_flat_zip_of_photos_scans_and_applies`,
+  `test_import_single_photo_file`; браузер ✅.
+
 ---
 
 > _Усі 14 docs готові + fix-pass + deep-bug-hunt (2026-06-01). **Закрито код-фіксами: F-001, F-004,

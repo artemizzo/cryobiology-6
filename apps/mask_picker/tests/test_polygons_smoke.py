@@ -2077,3 +2077,58 @@ def test_hard_reset_clears_state_polygons_groups_selected(client_cfg):
     assert raw_npy.exists() and raw_image.exists(), \
         "originals must NEVER be touched by hard-reset"
 
+
+
+def test_import_flat_zip_of_photos_scans_and_applies(client_cfg):
+    """ZIP «просто з фото» (без images/, без selections.json) — фото знаходяться
+    і додаються як нові; наявне локальне фото з тим самим іменем не перезаписується."""
+    client, cfg, store = client_cfg
+    cfg.workspace_dir = cfg.selected_dir.parent
+    (cfg.images_dir / "seq_keep.jpg").write_bytes(b"local")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("seq_0001.jpg", b"img1")
+        zf.writestr("seq_1/seq_0002.JPG", b"img2")
+        zf.writestr("seq_keep.jpg", b"from-zip")
+        zf.writestr("__MACOSX/._seq_0001.jpg", b"junk")
+        zf.writestr("notes.txt", b"not a photo")
+    buf.seek(0)
+    scan = client.post(
+        "/api/workspace/import-scan",
+        data={"files": (buf, "seq_1.zip")},
+        content_type="multipart/form-data",
+    ).get_json()
+    src = scan["sources"][0]
+    assert set(src["stems"]) == {"seq_0001", "seq_0002", "seq_keep"}, src
+
+    resp = client.post("/api/workspace/import-apply", json={
+        "scan_id": scan["scan_id"],
+        "picks": [{"idx": src["idx"], "stems": src["stems"]}],
+    })
+    body = resp.get_json()
+    assert resp.status_code == 200 and body["ok"], body
+    assert body["merged_stems"] == ["seq_0001", "seq_0002"]
+    assert body["kept_local"] == ["seq_keep"]
+    assert (cfg.images_dir / "seq_0001.jpg").read_bytes() == b"img1"
+    assert (cfg.images_dir / "seq_0002.JPG").read_bytes() == b"img2"
+    assert (cfg.images_dir / "seq_keep.jpg").read_bytes() == b"local"
+    assert not (cfg.images_dir / "._seq_0001.jpg").exists()
+
+
+def test_import_single_photo_file(client_cfg):
+    """Окремий jpg (не ZIP) теж імпортується як нове фото."""
+    client, cfg, _ = client_cfg
+    cfg.workspace_dir = cfg.selected_dir.parent
+    scan = client.post(
+        "/api/workspace/import-scan",
+        data={"files": (io.BytesIO(b"one"), "single_0001.jpg")},
+        content_type="multipart/form-data",
+    ).get_json()
+    src = scan["sources"][0]
+    assert src["stems"] == ["single_0001"]
+    body = client.post("/api/workspace/import-apply", json={
+        "scan_id": scan["scan_id"],
+        "picks": [{"idx": src["idx"], "stems": src["stems"]}],
+    }).get_json()
+    assert body["merged_stems"] == ["single_0001"]
+    assert (cfg.images_dir / "single_0001.jpg").read_bytes() == b"one"
