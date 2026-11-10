@@ -133,6 +133,14 @@ export const keysMixin = {
       this._polyDeleteSelectedVertices();
       return;
     }
+    // Стрілки: зсунути вибрані (ласо) точки на 1 px, Shift — на 10 px.
+    const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if (ARROWS[e.key] && this.state.polygons.tool === null && this.state.polygons.selectedVertices.size) {
+      e.preventDefault();
+      const k = e.shiftKey ? 10 : 1;
+      this._polyNudgeSelected(ARROWS[e.key][0] * k, ARROWS[e.key][1] * k);
+      return;
+    }
     if (e.code === "KeyD") { e.preventDefault(); this._setPolyTool("draw"); return; }
     if (e.code === "KeyE") { e.preventDefault(); this._setPolyTool(null); return; }
     if (e.code === "KeyP") { e.preventDefault(); this._setPolyTool("pick"); return; }

@@ -42,9 +42,14 @@ SoT — `pg.shapes` (браузер) → `polygons/<stem>.json` (LabelMe envelop
 | Alt+вершина | видалити вершину (<3→видалити shape) | `_polyDeleteVertex` |
 | клік по тілу | select shape | `_polyHitShape` |
 | клік по вершині у multi-select | group-drag усіх вибраних | `_polyStartGroupDrag` |
+| drag **всередині рамки виділення** або полігона з вибраними вершинами (≥1 вибрана, без Shift/Alt) | group-drag усіх вибраних (полігон деформується); клік без руху = старий клік (select shape / зняти виділення) | `_polyInSelectionArea` → `_polyStartGroupDrag` (+`clickShape`), mouseup (2026-11-10) |
+| стрілки ←↑→↓ (Shift ×10) при вибраних вершинах | зсув на 1/10 image-px; серія натискань <700 мс = 1 undo | `_polyNudgeSelected` (keys.js) |
 | клік по пустоті | lasso-select вершин (replace/add(Shift)/sub(Alt)) | `pg.lasso` → `_polyApplyLasso` |
 | **dblclick по ребру** | вставити вершину | `_polyOnDblClick`→`_polyHitEdge` (адаптивний поріг) |
 | Align (≥3 верш.) | підтягнути проміжні на пряму між 1-ю і останньою | `_polyAlignToLine` |
+
+Рамка виділення: `_polySelectionBBox` (bbox вибраних + `VERTEX_CLICK_PX`), малюється пунктиром у vertices-шарі при ≥2
+вибраних (`.polygon-selection-box`, `pointer-events:none`); над зоною — курсор `move` (скидається в `_setPolyTool`/`switchTab`).
 
 ### dblclick — ручна детекція (Bug G, polygons.js:90-104)
 Native `dblclick` НЕ долітає: кожен `_polyRedrawShapes` робить `innerHTML=""` → DOM-ціль 1-го кліку

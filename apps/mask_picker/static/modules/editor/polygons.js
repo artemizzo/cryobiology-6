@@ -55,6 +55,7 @@ export const polygonsMixin = {
     if (tool !== null && pg.tool === tool) tool = null;
     if (pg.tool === "draw" && tool !== "draw") this._polyCancelDraft();
     if (pg.tool === "break" && tool !== "break") this._repairCancel("інструмент змінено");
+    this._svg().style.cursor = "";   // скинути «move» курсор зони виділення
     pg.tool = tool;
     this._toolbarPolygons().querySelectorAll("[data-poly-tool]").forEach((b) => {
       b.classList.toggle("btn--mini-active", b.dataset.polyTool === tool);
@@ -194,6 +195,15 @@ export const polygonsMixin = {
       return;
     }
 
+    // Вибрані (ласо) точки: схопити БУДЬ-ДЕ в рамці виділення або в полігоні, якому
+    // вони належать → пересунути всі разом. Клік без руху → як раніше (mouseup).
+    if (!e.shiftKey && !e.altKey && pg.selectedVertices.size && this._polyInSelectionArea(pt)) {
+      e.preventDefault();
+      this._polyStartGroupDrag(pt);
+      pg.draggingGroup.clickShape = this._polyHitShape(pt);
+      return;
+    }
+
     const hitShape = this._polyHitShape(pt);
     if (hitShape !== -1) {
       e.preventDefault();
@@ -310,6 +320,9 @@ export const polygonsMixin = {
       this._polyRedrawShapes();
       this._polyRedrawVertices();
     }
+    // Курсор «перемістити» над зоною, за яку можна тягнути вибрані точки.
+    this._svg().style.cursor = (pg.tool === null && pg.selectedVertices.size
+      && (hv ? pg.selectedVertices.has(`${hv.si}:${hv.vi}`) : this._polyInSelectionArea(pt))) ? "move" : "";
   },
 
   _onSvgMouseUp(e) {
@@ -338,7 +351,15 @@ export const polygonsMixin = {
       return;
     }
     if (pg.draggingGroup) {
+      const g = pg.draggingGroup;
       pg.draggingGroup = null;
+      // Клік у зоні виділення без руху = звичайний клік: по полігону — обрати його,
+      // по порожньому — зняти виділення.
+      if (!g.pushed && g.clickShape !== undefined) {
+        pg.selectedVertices.clear();
+        pg.selectedShape = g.clickShape;
+        this._polyUpdateButtons();
+      }
       this._polyRedraw();
       return;
     }
@@ -373,7 +394,9 @@ export const polygonsMixin = {
       // "replace" — на mousedown clear'нули; "add" — додаємо до existing.
       hits.forEach((k) => pg.selectedVertices.add(k));
     }
-    showToast(`Lasso: ${hits.size} вершин`, "ok", 1500);
+    showToast(hits.size
+      ? `Lasso: ${hits.size} вершин — тягни всередині рамки або стрілки ←↑→↓, щоб пересунути`
+      : "Lasso: 0 вершин", "ok", hits.size ? 3000 : 1500);
     this._polyUpdateButtons();
     this._polyRedraw();
   },
@@ -495,6 +518,52 @@ export const polygonsMixin = {
       }
     }
     pg.draggingGroup = { startX: pt.x, startY: pt.y, orig };
+  },
+
+  // Рамка вибраних точок (image-coords) або null.
+  _polySelectionBBox() {
+    const pg = this.state.polygons;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const key of pg.selectedVertices) {
+      const [si, vi] = key.split(":").map(Number);
+      const p = pg.shapes[si] && pg.shapes[si].points[vi];
+      if (!p) continue;
+      x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]);
+      x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]);
+    }
+    if (x0 === Infinity) return null;
+    const pad = VERTEX_CLICK_PX * this._pxPerCss();
+    return { x0: x0 - pad, y0: y0 - pad, x1: x1 + pad, y1: y1 + pad };
+  },
+
+  // Чи можна тут схопити вибрані точки: у рамці виділення або в полігоні, що їх містить.
+  _polyInSelectionArea(pt) {
+    const pg = this.state.polygons;
+    const b = this._polySelectionBBox();
+    if (!b) return false;
+    if (pt.x >= b.x0 && pt.x <= b.x1 && pt.y >= b.y0 && pt.y <= b.y1) return true;
+    const owners = new Set([...pg.selectedVertices].map((k) => +k.split(":")[0]));
+    for (const si of owners) {
+      if (pg.shapes[si] && _pointInPoly(pt.x, pt.y, pg.shapes[si].points)) return true;
+    }
+    return false;
+  },
+
+  // Стрілки: зсунути вибрані точки на (dx, dy) image-px. Серія натискань = 1 undo.
+  _polyNudgeSelected(dx, dy) {
+    const pg = this.state.polygons;
+    if (!pg.selectedVertices.size) return false;
+    const now = performance.now();
+    if (!pg._nudgeT || now - pg._nudgeT > 700) this._polyPushUndoSnapshot();
+    pg._nudgeT = now;
+    for (const key of pg.selectedVertices) {
+      const [si, vi] = key.split(":").map(Number);
+      const p = pg.shapes[si] && pg.shapes[si].points[vi];
+      if (p) pg.shapes[si].points[vi] = [p[0] + dx, p[1] + dy];
+    }
+    this._polyMarkDirty();
+    this._polyRedraw();
+    return true;
   },
 
   _polyToggleVertexSelected(si, vi) {
@@ -1039,6 +1108,18 @@ export const polygonsMixin = {
         layer.appendChild(c);
       });
     });
+    // Пунктирна рамка навколо ≥2 вибраних точок = зона, за яку їх можна тягнути.
+    const b = pg.tool === null && pg.selectedVertices.size >= 2 ? this._polySelectionBBox() : null;
+    if (b) {
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", String(b.x0)); rect.setAttribute("y", String(b.y0));
+      rect.setAttribute("width", String(b.x1 - b.x0)); rect.setAttribute("height", String(b.y1 - b.y0));
+      rect.setAttribute("class", "polygon-selection-box");
+      rect.setAttribute("style",
+        "fill:rgba(255,255,255,0.04);stroke:#ffffff;stroke-width:1;stroke-dasharray:5 4;" +
+        "vector-effect:non-scaling-stroke;pointer-events:none;");
+      layer.insertBefore(rect, layer.firstChild);
+    }
   },
 
   _polyRedrawDraft() {

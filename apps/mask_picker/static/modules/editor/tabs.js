@@ -14,6 +14,7 @@ export const tabsMixin = {
     if (tab !== "cleanup" && tab !== "polygons" && tab !== "groups") return;
     if (tab === this.state.activeTab) return;
     if (this.state.polygons.repair) this._repairCancel("змінено таб");
+    this._svg().style.cursor = "";
     // Flush-on-switch: dirty → autosave (без close).
     const flushPoly = this.state.activeTab === "polygons" && this.state.polygons.dirty;
     const flushCleanup = this.state.activeTab === "cleanup" && this.state.cleanup.dirty;
@@ -186,7 +187,8 @@ export const tabsMixin = {
       } else {
         hint.innerHTML = `✋ <b>Edit</b>: drag = перенести вершину. dblclick на ребрі = вставити вершину. ` +
           `<kbd>Alt</kbd>+клік — видалити вершину. <kbd>Delete</kbd> — обраний полігон. ` +
-          `Drag по порожньому = lasso multi-select (<kbd>Shift</kbd> додати, <kbd>Alt</kbd> відняти). ` +
+          `Drag по порожньому = lasso multi-select (<kbd>Shift</kbd> додати, <kbd>Alt</kbd> відняти); ` +
+          `вибрані точки — тягни всередині рамки або стрілки (<kbd>Shift</kbd> ×10). ` +
           `<kbd>D</kbd> — до draw.`;
       }
     }
