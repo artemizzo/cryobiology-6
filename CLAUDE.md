@@ -61,7 +61,7 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
 - Автор — попередній розробник (upstream `MykhailoFesenko/cryobiology-mask-picker`, писав разом з Claude).
   Зараз проєкт веде **новий мейнтейнер-початківець** у форку **`artemizzo/cryobiology-6`** (сюди й пушити).
   Пояснювати йому простою мовою, українською, без жаргону; не вважати, що він знає git/Python/Docker.
-- Гілки: працюємо в `main`. `docker-setup`, `launchers`, `manual-mode`, `export-import-fixes`, `lasso-move` злиті в `main` (видаляти гілки на GitHub
+- Гілки: працюємо в `main`. `docker-setup`, `launchers`, `manual-mode`, `export-import-fixes`, `lasso-move`, `shape-move` злиті в `main` (видаляти гілки на GitHub
   сесія не може — 403; користувач видаляє сам через сайт).
 - У користувача: Windows 11, Docker Desktop (WSL2) встановлено; проєкт склоновано git-ом у
   `Documents\cryobiology-6` (переведено на `main`); редактор у Docker запускається ✅ (2026-10-30);
