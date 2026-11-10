@@ -185,7 +185,8 @@ export const tabsMixin = {
         hint.innerHTML = `🎯 <b>Pick</b>: клік по клітині на масці → seed тільки цього інстанса. ` +
           `Rejected не беруться. <kbd>D</kbd> — до draw, <kbd>E</kbd> — до edit.`;
       } else {
-        hint.innerHTML = `✋ <b>Edit</b>: drag = перенести вершину. dblclick на ребрі = вставити вершину. ` +
+        hint.innerHTML = `✋ <b>Edit</b>: drag = перенести вершину; drag усередині полігона = пересунути весь полігон. ` +
+          `dblclick на ребрі = вставити вершину. ` +
           `<kbd>Alt</kbd>+клік — видалити вершину. <kbd>Delete</kbd> — обраний полігон. ` +
           `Drag по порожньому = lasso multi-select (<kbd>Shift</kbd> додати, <kbd>Alt</kbd> відняти); ` +
           `вибрані точки — тягни всередині рамки або стрілки (<kbd>Shift</kbd> ×10). ` +

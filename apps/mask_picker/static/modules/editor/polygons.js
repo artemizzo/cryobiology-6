@@ -209,6 +209,11 @@ export const polygonsMixin = {
       e.preventDefault();
       pg.selectedShape = hitShape;
       pg.selectedVertices.clear();
+      // Тягнути за тіло полігона = пересунути весь полігон (зручно, коли
+      // полігони стоять упритул і ласо не обвести). Рух починається після
+      // невеликого порогу, тож звичайний клік лише обирає полігон.
+      const orig = new Map(pg.shapes[hitShape].points.map((p, vi) => [`${hitShape}:${vi}`, [p[0], p[1]]]));
+      pg.draggingGroup = { startX: pt.x, startY: pt.y, orig, minMove: 3 * this._pxPerCss() };
       this._polyUpdateButtons();
       this._polyRedraw();
       return;
@@ -281,6 +286,8 @@ export const polygonsMixin = {
       return;
     }
     if (pg.draggingGroup) {
+      const g = pg.draggingGroup;
+      if (!g.pushed && g.minMove && Math.hypot(pt.x - g.startX, pt.y - g.startY) < g.minMove) return;
       if (!pg.draggingGroup.pushed) { this._polyPushUndoSnapshot(); pg.draggingGroup.pushed = true; }
       const dx = pt.x - pg.draggingGroup.startX;
       const dy = pt.y - pg.draggingGroup.startY;
@@ -549,14 +556,18 @@ export const polygonsMixin = {
     return false;
   },
 
-  // Стрілки: зсунути вибрані точки на (dx, dy) image-px. Серія натискань = 1 undo.
+  // Стрілки: зсунути вибрані точки (або весь обраний полігон) на (dx, dy) image-px.
+  // Серія натискань = 1 undo.
   _polyNudgeSelected(dx, dy) {
     const pg = this.state.polygons;
-    if (!pg.selectedVertices.size) return false;
+    // Без вибраних вершин — зсуваємо весь обраний полігон.
+    const keys = pg.selectedVertices.size ? [...pg.selectedVertices]
+      : (pg.shapes[pg.selectedShape] ? pg.shapes[pg.selectedShape].points.map((_, vi) => `${pg.selectedShape}:${vi}`) : []);
+    if (!keys.length) return false;
     const now = performance.now();
     if (!pg._nudgeT || now - pg._nudgeT > 700) this._polyPushUndoSnapshot();
     pg._nudgeT = now;
-    for (const key of pg.selectedVertices) {
+    for (const key of keys) {
       const [si, vi] = key.split(":").map(Number);
       const p = pg.shapes[si] && pg.shapes[si].points[vi];
       if (p) pg.shapes[si].points[vi] = [p[0] + dx, p[1] + dy];
@@ -1073,7 +1084,7 @@ export const polygonsMixin = {
       const strokeW = isSelected ? 2.5 : isHover ? 2 : 1.5;
       poly.setAttribute("style",
         `fill:${_hexToRgba(color, fillAlpha)};stroke:${_hexToRgba(color, strokeAlpha)};` +
-        `stroke-width:${strokeW};vector-effect:non-scaling-stroke;cursor:pointer;`);
+        `stroke-width:${strokeW};vector-effect:non-scaling-stroke;cursor:${pg.tool === null ? "move" : "pointer"};`);
       poly.setAttribute("class", "polygon-shape");
       poly.dataset.si = String(si);
       layer.appendChild(poly);

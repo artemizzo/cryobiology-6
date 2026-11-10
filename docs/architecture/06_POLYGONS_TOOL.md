@@ -41,9 +41,10 @@ SoT — `pg.shapes` (браузер) → `polygons/<stem>.json` (LabelMe envelop
 | Shift+вершина | toggle у multi-select | `_polyToggleVertexSelected` |
 | Alt+вершина | видалити вершину (<3→видалити shape) | `_polyDeleteVertex` |
 | клік по тілу | select shape | `_polyHitShape` |
+| **drag по тілу** | пересунути ВЕСЬ полігон (поріг 3 CSS-px — клік/тремтіння лише обирає) | `draggingGroup` з усіма вершинами shape + `minMove` (2026-11-10) |
 | клік по вершині у multi-select | group-drag усіх вибраних | `_polyStartGroupDrag` |
 | drag **всередині рамки виділення** або полігона з вибраними вершинами (≥1 вибрана, без Shift/Alt) | group-drag усіх вибраних (полігон деформується); клік без руху = старий клік (select shape / зняти виділення) | `_polyInSelectionArea` → `_polyStartGroupDrag` (+`clickShape`), mouseup (2026-11-10) |
-| стрілки ←↑→↓ (Shift ×10) при вибраних вершинах | зсув на 1/10 image-px; серія натискань <700 мс = 1 undo | `_polyNudgeSelected` (keys.js) |
+| стрілки ←↑→↓ (Shift ×10) при вибраних вершинах або обраному полігоні | зсув вибраних вершин, а без них — усього обраного полігона, на 1/10 image-px; серія натискань <700 мс = 1 undo | `_polyNudgeSelected` (keys.js) |
 | клік по пустоті | lasso-select вершин (replace/add(Shift)/sub(Alt)) | `pg.lasso` → `_polyApplyLasso` |
 | **dblclick по ребру** | вставити вершину | `_polyOnDblClick`→`_polyHitEdge` (адаптивний поріг) |
 | Align (≥3 верш.) | підтягнути проміжні на пряму між 1-ю і останньою | `_polyAlignToLine` |

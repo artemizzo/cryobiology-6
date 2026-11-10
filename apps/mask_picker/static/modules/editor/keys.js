@@ -133,9 +133,10 @@ export const keysMixin = {
       this._polyDeleteSelectedVertices();
       return;
     }
-    // Стрілки: зсунути вибрані (ласо) точки на 1 px, Shift — на 10 px.
+    // Стрілки: зсунути вибрані (ласо) точки або весь обраний полігон на 1 px, Shift — на 10 px.
     const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-    if (ARROWS[e.key] && this.state.polygons.tool === null && this.state.polygons.selectedVertices.size) {
+    const pgK = this.state.polygons;
+    if (ARROWS[e.key] && pgK.tool === null && (pgK.selectedVertices.size || pgK.selectedShape >= 0)) {
       e.preventDefault();
       const k = e.shiftKey ? 10 : 1;
       this._polyNudgeSelected(ARROWS[e.key][0] * k, ARROWS[e.key][1] * k);
