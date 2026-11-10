@@ -7,7 +7,7 @@ Cryobiology V / **Mask Picker**: human-in-the-loop пайплайн доразм
 ## Де що читати (не дублюю — тут лише вказівники)
 - `README.md` — огляд, швидкий старт. `INSTALL.md` — встановлення, ваги, чистий ПК.
 - `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
-- `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-015), відкриті пункти — там.
+- `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-018), відкриті пункти — там.
 - `docs/CODE_AUDIT_PRINCIPLES.md` — **обовʼязково перед правками** (див. нижче).
 - `docs/TECHNICAL_REPORT.md`, `docs/PROJECT_JOURNEY.md` — історія й рішення.
 
@@ -30,7 +30,7 @@ python apps/segmentation/run_segmentation.py --data-dir data/<dataset>   # кр�
 python apps/mask_picker/app.py --workspace data/<dataset>                # крок 2 → http://127.0.0.1:5000
 python tools/launchers/bake_all.py --data-dir data/<dataset> --pack      # deliverable
 python tools/make_sandbox.py                                             # безпечна копія датасету для експериментів
-cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 244 passed)
+cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 246 passed)
 ```
 
 ### Docker (основний спосіб запуску для користувача)
@@ -70,7 +70,8 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   Python локально не ставився. 2026-11-07: користувач імпортував власний ZIP із jpg (`seq_1.zip`) і розмічає
   вручну (режим `manual`); ручна розмітка + розрив + запікання на Windows — «працює».
 - Історія запитів мейнтейнера (що вже зроблено): Docker (`15`) → ярлики (`15`§5) → ручна розмітка + ✂ розрив
-  полігона + імпорт «просто фото» (`16`, F-015). Інструкція для людей по ручному режиму й карта збереження
+  полігона + імпорт «просто фото» (`16`, F-015) → перевірка експорт/імпорт/повторна обробка (`16`§7;
+  фікси F-016 класи губились, F-017 Split губив групи, F-018 дубль overlay). Інструкція для людей по ручному режиму й карта збереження
   даних — `README.md` §«Ручна розмітка». Відкриті ідеї: імпорт зовнішніх форматів розмітки (COCO/CVAT),
   native-діалоги вибору папки в Docker (`15`§6).
 - Хмарна сесія Claude Code не запускає код з репо без дозволу (класифікатор безпеки) — попросити дозвіл, якщо треба.
@@ -83,6 +84,9 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
 - **Ручна розмітка = псевдо-модель `manual`** (`state.ManualModelSource`, завжди останній у `cfg.models`):
   для решти коду — звичайна модель. Нові місця, що читають `m.npy_dir` напряму, мають викликати
   `m.ensure_base(stem)` (або йти через `cleanup._find_npy_for`). → `16_MANUAL_MODE.md`.
+- **Перенесення розмітки:** звичайний експорт БЕЗ фото (за задумом); `labels.json`/`group_classes.json` їдуть в
+  архіві й мерджаться при імпорті (`_merge_workspace_meta`: бракуючі класи — в кінець). Нові файли метаданих
+  workspace додавати і в експорт, і в Split (`make_annotation_task.py`), і в імпорт.
 - **Розрив полігона** (`editor/repair.js`, tool `"break"`): відкриті лінії живуть лише в `pg.repair`,
   commit пише у той самий індекс shape (групи не ламаються). Не зберігати відкриті лінії в `pg.shapes`.
 - Три ID-простори: `raw_iid` (модель), reserved-ID полігонів `50000+`, dense `1..N` лише у deliverable.

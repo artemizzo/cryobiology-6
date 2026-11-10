@@ -39,6 +39,8 @@ from state import (
     _discover_models,
     _find_image_filename,
     _load_json_file,
+    _load_label_classes,
+    _save_label_classes,
 )
 from cleanup import _find_npy_for
 from polygons import _validate_polygons_payload
@@ -238,6 +240,44 @@ def _normalize_flat_source(src_root: Path) -> None:
             continue   # службові файли macOS / приховані
         images.mkdir(exist_ok=True)
         shutil.move(str(p), str(images / p.name))
+
+
+def _merge_workspace_meta(src_root: Path, cfg: Config) -> dict:
+    """
+    Переносить із джерела імпорту класи (labels.json) і правила груп
+    (group_classes.json). Без цього розмітка з vesicle/… у новому датасеті
+    мовчки запікалась би як nucleus (невідомий клас → class_id 0).
+
+    labels.json: локального нема → копія; є → бракуючі (за name) ДОПИСУЮТЬСЯ
+    В КІНЕЦЬ — порядок наявних класів = семантичний контракт (F-014), не
+    змінюється. group_classes.json: копіюється лише якщо локального нема.
+    """
+    out: dict = {}
+    src_labels = next(src_root.rglob("labels.json"), None)
+    if src_labels is not None and cfg.labels_file:
+        try:
+            imported = json.loads(src_labels.read_text(encoding="utf-8-sig"))
+        except Exception:
+            imported = None
+        if isinstance(imported, list) and imported:
+            if cfg.labels_file.exists():
+                local = _load_label_classes(cfg.labels_file)
+                known = {c.get("name") for c in local}
+                added = [c for c in imported if c.get("name") and c.get("name") not in known]
+                if added:
+                    _save_label_classes(cfg.labels_file, local + added)
+            else:
+                added = imported
+                _save_label_classes(cfg.labels_file, imported)
+            if added:
+                out["labels_added"] = [c.get("name") for c in added]
+    src_gc = next(src_root.rglob("group_classes.json"), None)
+    if (src_gc is not None and cfg.group_classes_file
+            and not cfg.group_classes_file.exists()):
+        cfg.group_classes_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src_gc, cfg.group_classes_file)
+        out["group_classes_copied"] = True
+    return out
 
 
 def _copy_stem_artifacts(src_root: Path, dst_ws: Path, stem: str) -> int:
@@ -484,6 +524,12 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
                         "selections.json",
                         json.dumps(filtered, ensure_ascii=False, indent=2),
                     )
+
+            # Класи + правила груп: без них розмітка в іншому датасеті втрачає
+            # класи (vesicle → nucleus при bake). Імпорт їх мерджить.
+            for meta_path in (cfg.labels_file, cfg.group_classes_file):
+                if meta_path and meta_path.exists():
+                    zf.write(meta_path, meta_path.name)
 
             for root_dir, arc_prefix in [
                 (cfg.selected_dir, "selected"),
@@ -984,6 +1030,7 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         total_files = 0
         merged: list[str] = []      # imported переміг → застосовано
         kept_local: list[str] = []  # local новіший → залишено
+        meta: dict = {"labels_added": []}
         try:
             for pick in picks:
                 try:
@@ -995,6 +1042,10 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
                 if not src_dir.exists() or not wanted:
                     continue
                 imported_sel = _read_scan_selections(src_dir)
+                m = _merge_workspace_meta(src_dir, cfg)
+                meta["labels_added"] += m.get("labels_added", [])
+                if m.get("group_classes_copied"):
+                    meta["group_classes_copied"] = True
                 for stem in wanted:
                     imp = imported_sel.get(stem)
                     loc = current.get(stem)
@@ -1032,6 +1083,7 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
             "merged_stems": merged_unique,
             "merged_count": len(merged_unique),
             "kept_local": sorted(set(kept_local)),
+            **meta,
         })
 
     return bp

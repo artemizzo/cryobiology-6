@@ -125,13 +125,13 @@ python tools/launchers/bake_all.py --data-dir data/my_dataset --pack
   ДО Mask Picker. Mask Picker авто-знаходить моделі (підпапки з `overlay/` всередині `output/`).
 - **Рекомендований smoke-тест чистого середовища:** `python -m venv` → `pip install -r ...` →
   `pip install -e ./shared/cellsegkit` → `python apps/mask_picker/app.py --workspace data/_test` →
-  відкрити localhost:5000 (має стартувати порожнім). Тоді `cd apps/mask_picker && python -m pytest tests/ -q` (244 green).
+  відкрити localhost:5000 (має стартувати порожнім). Тоді `cd apps/mask_picker && python -m pytest tests/ -q` (246 green).
 
 ## 6. Тести
 ```bash
 cd apps/mask_picker
 # Windows: $env:MPLBACKEND="Agg"   |   Linux: export MPLBACKEND=Agg
-python -m pytest tests/ -q          # очікувано: 244 passed
+python -m pytest tests/ -q          # очікувано: 246 passed
 ```
 
 ## 7. Структура (коротко)

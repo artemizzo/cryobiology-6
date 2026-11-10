@@ -217,10 +217,9 @@ class ManualModelSource(ModelSource):
             w, h = im.size
             self.overlay_dir.mkdir(parents=True, exist_ok=True)
             if not super().overlay_path(stem):
-                if src.suffix.lower() in OVERLAY_EXTS:
-                    shutil.copy2(src, self.overlay_dir / f"{stem}{src.suffix.lower()}")
-                else:
-                    im.convert("RGB").save(self.overlay_dir / f"{stem}.png")
+                # Завжди PNG: bake пише selected/manual/overlay/<stem>.png — з .jpg
+                # тут у selected лишались би ДВА overlay на одне фото.
+                im.convert("RGB").save(self.overlay_dir / f"{stem}.png")
         if not npy_path.exists():
             self.npy_dir.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(dir=str(self.npy_dir), suffix=".npy.tmp")

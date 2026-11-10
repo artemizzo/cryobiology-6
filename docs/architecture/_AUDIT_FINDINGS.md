@@ -172,6 +172,29 @@
   імпорту — за ОСТАННІМ числом в імені (`seq_1_0002` → 2). Тести: `test_import_flat_zip_of_photos_scans_and_applies`,
   `test_import_single_photo_file`; браузер ✅.
 
+### F-016 — Класи (labels.json) губились при експорті/імпорті → vesicle запікався як nucleus   🔴 high · ✅ fixed (2026-11-10)
+- **Код:** `api_workspace_export` не клав `labels.json` / `group_classes.json`; `import-apply` (Day 8 merge-import)
+  їх ігнорував навіть якщо були в архіві (Split-пакет, `--pack`). `_load_label_classes` без файлу → лише
+  `nucleus`; bake: невідомий label → `class_id 0` **мовчки** (`baking._bake_polygons_into_labels`, `.get(label, 0)`).
+- **Симптом:** розмітка з nucleus+vesicle → Експорт → Імпорт у новий датасет → «Зберегти все» → у YOLO/semantic
+  усі везикули стали ядрами. Без помилок і попереджень.
+- **Фікс:** експорт кладе обидва файли в корінь ZIP; `_merge_workspace_meta` в import-apply: нема локального
+  `labels.json` → копія; є → бракуючі класи (за name) дописуються В КІНЕЦЬ (порядок наявних = контракт F-014);
+  `group_classes.json` — лише якщо локального нема. Відповідь `labels_added`; фронт показує toast і оновлює
+  список класів. Тест `test_export_carries_classes_and_import_appends_missing` + roundtrip 33/33 + браузер.
+- **Лишається (не баг поведінки, відомий контракт):** полігон з класом, якого нема в `labels.json`, і далі
+  запікається як class 0 без попередження.
+
+### F-017 — Split-пакет губив групи клітин   🟠 medium · ✅ fixed (2026-11-10)
+- **Код:** `tools/launchers/make_annotation_task.py prepare_task` копіював images/output/selected/polygons/skipped,
+  але не `groups/<stem>.json` і не `group_classes.json`.
+- **Фікс:** копіює обидва (+ `counts.groups` у MANIFEST). Тест `test_split_pack_keeps_groups`.
+
+### F-018 — Ручний режим: два overlay на одне фото (`.jpg` + `.png`)   🟡 low · ✅ fixed (2026-11-10)
+- `ManualModelSource.ensure_base` копіював оригінал `.jpg` як overlay; bake писав `<stem>.png` поряд. Тепер
+  overlay-основа завжди PNG. Фото, матеріалізовані ДО фіксу, мають зайвий `.jpg` у `output/manual/overlay` і
+  `selected/manual/overlay` — нешкідливо (лише перегляд).
+
 ---
 
 > _Усі 14 docs готові + fix-pass + deep-bug-hunt (2026-06-01). **Закрито код-фіксами: F-001, F-004,

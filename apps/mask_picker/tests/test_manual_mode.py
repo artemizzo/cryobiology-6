@@ -88,7 +88,9 @@ def test_select_manual_creates_empty_base(client_cfg):
     raw = np.load(cfg.output_root / MANUAL_MODEL / "npy" / f"{STEM}.npy")
     assert raw.shape == (H, W) and not raw.any()
     assert (cfg.selected_dir / MANUAL_MODEL / "npy" / f"{STEM}.npy").exists()
-    assert (cfg.output_root / MANUAL_MODEL / "overlay" / f"{STEM}.jpg").exists()
+    # overlay завжди PNG (інакше у selected/manual/overlay було б 2 файли: .jpg і .png після bake)
+    assert (cfg.output_root / MANUAL_MODEL / "overlay" / f"{STEM}.png").exists()
+    assert not (cfg.output_root / MANUAL_MODEL / "overlay" / f"{STEM}.jpg").exists()
 
 
 def test_manual_polygons_bake_into_mask(client_cfg):
@@ -118,3 +120,59 @@ def test_manual_npy_created_lazily_for_imported_stem(client_cfg):
     m = next(mm for mm in cfg.models if mm.name == MANUAL_MODEL)
     p = _find_npy_for(m, STEM)
     assert p is not None and p.exists()
+
+
+LABELS = [{"id": 1, "name": "nucleus", "color": "#4488ff", "shortcut": "1"},
+          {"id": 2, "name": "vesicle", "color": "#ff8844", "shortcut": "2"}]
+
+
+def _import(client, data: bytes, name: str) -> dict:
+    import io
+    scan = client.post("/api/workspace/import-scan", data={"files": (io.BytesIO(data), name)},
+                       content_type="multipart/form-data").get_json()
+    src = scan["sources"][0]
+    return client.post("/api/workspace/import-apply", json={
+        "scan_id": scan["scan_id"], "picks": [{"idx": src["idx"], "stems": src["stems"]}]}).get_json()
+
+
+def test_export_carries_classes_and_import_appends_missing(client_cfg, tmp_path):
+    """Експорт кладе labels.json + group_classes.json; імпорт у датасет з іншими
+    класами ДОПИСУЄ бракуючі в кінець (порядок наявних = семантичний контракт)."""
+    import io, json, zipfile
+    client, cfg = client_cfg
+    client.post("/api/labels", json=LABELS)
+    cfg.group_classes_file.write_text('{"version": 1, "classes": []}', encoding="utf-8")
+    client.post("/api/select", json={"stem": STEM, "model": MANUAL_MODEL})
+    client.post(f"/api/polygons/{STEM}", json={"shapes": [{
+        "label": "vesicle", "shape_type": "polygon", "group_id": None, "flags": {},
+        "points": [[5, 5], [15, 5], [15, 15], [5, 15]]}], "imageHeight": H, "imageWidth": W})
+    data = client.get("/api/workspace/export").data
+    names = zipfile.ZipFile(io.BytesIO(data)).namelist()
+    assert "labels.json" in names and "group_classes.json" in names
+
+    other = _workspace(tmp_path / "other")
+    other.labels_file.write_text(json.dumps([LABELS[0], {"id": 2, "name": "debris"}]), encoding="utf-8")
+    c2 = create_app(other, StateStore(other.selected_dir.parent / "selections.json")).test_client()
+    resp = _import(c2, data, "export.zip")
+    assert resp["ok"] and resp["labels_added"] == ["vesicle"]
+    assert [c["name"] for c in json.loads(other.labels_file.read_text())] == ["nucleus", "debris", "vesicle"]
+    assert other.group_classes_file.exists()
+
+
+def test_split_pack_keeps_groups(client_cfg):
+    """Пакет Split містить groups/<stem>.json і group_classes.json (раніше губились)."""
+    import io, json, zipfile
+    from pathlib import Path as _P
+    client, cfg = client_cfg
+    Image.new("RGB", (W, H)).save(cfg.images_dir / "second.jpg")
+    cfg.group_classes_file.write_text('{"version": 1, "classes": []}', encoding="utf-8")
+    cfg.groups_dir.joinpath(f"{STEM}.json").write_text(json.dumps(
+        {"version": "1.1", "stem": STEM, "model": MANUAL_MODEL, "groups": []}), encoding="utf-8")
+    sp = client.post("/api/workspace/split", json={"n": 2}).get_json()
+    assert sp.get("ok"), sp
+    names = []
+    for z in sp["zips"]:
+        names += zipfile.ZipFile(_P(sp["out_dir"]) / _P(z).name).namelist()
+    assert any(n.endswith(f"groups/{STEM}.json") for n in names), names
+    assert any(n.endswith("group_classes.json") for n in names)
+

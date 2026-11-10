@@ -73,7 +73,7 @@ pg.repair = { si, pieces: [[[x,y],…],…], selPiece, extend: null|{piece,end:"
 - Глобальний redo під час сеансу ігнорується (стек сеансу окремий).
 
 ## 3. Перевірка (2026-11-07)
-- pytest **244/244** (`tests/test_manual_mode.py`: discovery без дубля, каталог для фото без моделей,
+- pytest **246/246** (`tests/test_manual_mode.py`: discovery без дубля, каталог для фото без моделей,
   select створює порожню базу, bake полігона → `50000`, лінива матеріалізація для імпортованого stem).
 - Браузер (Playwright, хмарна сесія; сценарій у scratchpad не комітиться): 19/19 — картка «✋ Ручна
   розмітка» для фото без масок; draw → розрив по ребру (6 точок, 2 кінці) → 2-й розрив (обрано коротший
@@ -110,4 +110,21 @@ pg.repair = { si, pieces: [[[x,y],…],…], selPiece, extend: null|{piece,end:"
 - Кнопка «📥 Імпорт» у діалозі файлів показує лише `.jpg .jpeg .png .zip` (`index.html` `accept=`), бекенд
   приймає й `.tif/.tiff/.bmp` (усередині ZIP).
 - Мейнтейнер перевірив на Windows (2026-11-07): ручна розмітка, імпорт ZIP з jpg, запікання — «працює».
+
+## 7. Експорт / імпорт і повторна обробка (перевірено 2026-11-10)
+Сценарій (scratchpad-скрипт, API як кнопки UI): ручна розмітка nucleus+vesicle + група → кожен вид експорту →
+імпорт у новий датасет → відкрити в редакторі (маска-основа, Groups), дописати полігон, «Зберегти все».
+**33/33 ✅** (після фіксів F-016/F-017/F-018).
+
+| Експорт | Що в ZIP | Імпорт у новий датасет | Продовжити роботу |
+|---|---|---|---|
+| **📤 Експорт** (звичайний, `/api/workspace/export`) | `selected/ polygons/ groups/ selections.json labels.json group_classes.json overlays/<stem>__<клас>.png`; **без фото** | ✅ якщо фото вже є в датасеті; **у порожньому датасеті фото не з'являються** (розмітка є, а `images/` нема) | ✅ |
+| + галочка «Маски» (`?masks=1`) | + `selected/<model>/semantic/`, `mask_groups/` | ✅ | ✅ |
+| + галочка «Фіналізувати» | спершу запікання незапечених, далі як звичайний | ✅ | ✅ |
+| + «Розбити на N» (Split) | N пакетів: `images/ output/<model>/ selected/ polygons/ groups/ labels.json group_classes.json selections.json` + `START_MASK_PICKER.bat`, README | ✅ навіть у порожній датасет | ✅ |
+| `finalize/<stem>` (1 фото) | фото + розмітка одного stem + `labels.json` | ✅ | ✅ |
+| Фінальний датасет `bake_all.py --pack` | `images/ masks/ masks_npy/ semantic/ overlays/ polygons/ yolo/ selections.json labels.json README` | ✅ (фото + полігони + стан) — **групи не входять** | ✅ |
+
+Ручний режим після імпорту: `output/manual/` не експортується звичайним експортом — `ensure_base` відтворює
+порожню основу з фото при першому зверненні (тому потрібні фото).
 

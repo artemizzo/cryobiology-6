@@ -6,8 +6,10 @@ The package keeps the normal workspace layout:
   output/<model>/{overlay,npy,png,yolo}/
   selected/
   polygons/
+  groups/
   skipped/
   labels.json
+  group_classes.json
   selections.json
   README_FOR_ANNOTATOR.md
 
@@ -312,6 +314,7 @@ def prepare_task(
     copied_images = 0
     copied_polygons = 0
     copied_skipped = 0
+    copied_groups = 0
     for stem in stems:
         img = find_image(data_dir, stem)
         if img and copy_file(img, task_dir / "images" / img.name):
@@ -320,10 +323,13 @@ def prepare_task(
             copied_polygons += 1
         if copy_file(data_dir / "skipped" / f"{stem}.skipped.txt", task_dir / "skipped" / f"{stem}.skipped.txt"):
             copied_skipped += 1
+        # Групи клітин теж частина розмітки — без них пакет губив групування.
+        if copy_file(data_dir / "groups" / f"{stem}.json", task_dir / "groups" / f"{stem}.json"):
+            copied_groups += 1
 
-    labels_path = data_dir / "labels.json"
-    if labels_path.exists():
-        copy_file(labels_path, task_dir / "labels.json")
+    for meta in ("labels.json", "group_classes.json"):
+        if (data_dir / meta).exists():
+            copy_file(data_dir / meta, task_dir / meta)
     (task_dir / "selections.json").write_text(
         json.dumps(filter_selections(data_dir, stems), ensure_ascii=False, indent=2),
         encoding="utf-8",
@@ -343,6 +349,7 @@ def prepare_task(
             "images": copied_images,
             "polygons": copied_polygons,
             "skipped_markers": copied_skipped,
+            "groups": copied_groups,
             "selected_files": selected_count,
             "output_files_by_model": output_counts,
         },

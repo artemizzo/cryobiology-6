@@ -4,7 +4,8 @@
 
 import { $, showToast } from "./util.js";
 import { api } from "./api.js";
-import { state, currentItem } from "./state.js";
+import { state, currentItem, setAppLabels } from "./state.js";
+import { _buildLabelDropdown } from "./labels.js";
 
 let editorRef = null;
 let reloadCatalogFn = null;
@@ -455,10 +456,17 @@ async function _applyImportMerge() {
       body: JSON.stringify({ scan_id: _importScanId, picks }),
     });
     if (resp.ok) {
+      const added = resp.labels_added || [];
       showToast(
-        `✓ Імпортовано ${resp.merged_count} фото (${resp.files_copied} файлів)`,
+        `✓ Імпортовано ${resp.merged_count} фото (${resp.files_copied} файлів)` +
+        (added.length ? ` · нові класи: ${added.join(", ")}` : ""),
         "ok", 5000,
       );
+      if (added.length) {
+        // Класи з архіву дописано у labels.json — оновити список класів у UI.
+        setAppLabels(await api("/api/labels"));
+        _buildLabelDropdown();
+      }
       $("#importMergeModal").classList.remove("open");
       if (reloadCatalogFn) await reloadCatalogFn(true);
       if (renderAllFn) renderAllFn();
