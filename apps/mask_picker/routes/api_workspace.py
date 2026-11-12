@@ -37,6 +37,8 @@ from state import (
     Config,
     StateStore,
     _discover_models,
+    IMAGE_EXTS,
+    ManualModelSource,
     _find_image_filename,
     _load_json_file,
     _load_label_classes,
@@ -530,6 +532,33 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
             for meta_path in (cfg.labels_file, cfg.group_classes_file):
                 if meta_path and meta_path.exists():
                     zf.write(meta_path, meta_path.name)
+
+            # Галочка «📷 Додати фото» (?images=1): самодостатній архів — фото +
+            # сирий вихід обраної моделі (output/<model>/), щоб розмітку можна
+            # було відкрити, допрацювати й перезапекти на іншому ПК / у порожньому
+            # датасеті. «manual» не кладемо — ensure_base відтворює основу з фото.
+            if (request.args.get("images") or "").strip() in ("1", "true", "yes"):
+                if stem_filter is not None:
+                    img_stems = sorted(stem_filter)
+                else:
+                    img_stems = sorted({p.stem for p in cfg.images_dir.iterdir()
+                                        if p.suffix.lower() in IMAGE_EXTS}) \
+                        if cfg.images_dir.exists() else []
+                for s in img_stems:
+                    name = _find_image_filename(cfg.images_dir, s)
+                    if name:
+                        zf.write(cfg.images_dir / name, f"images/{name}")
+                    model = (state.get(s) or {}).get("model")
+                    m = next((mm for mm in cfg.models if mm.name == model), None)
+                    if m is None or isinstance(m, ManualModelSource):
+                        continue
+                    for d in (m.overlay_dir, m.npy_dir, m.png_dir, m.yolo_dir):
+                        if not d or not d.exists():
+                            continue
+                        for cand in (s, f"Копия {s}"):
+                            for p in d.glob(f"{cand}.*"):
+                                if p.is_file():
+                                    zf.write(p, f"output/{m.name}/{d.name}/{p.name}")
 
             for root_dir, arc_prefix in [
                 (cfg.selected_dir, "selected"),

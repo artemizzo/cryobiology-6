@@ -9,7 +9,7 @@
 > [`_AUDIT_FINDINGS.md`](_AUDIT_FINDINGS.md).
 >
 > Метод аудиту — [`../CODE_AUDIT_PRINCIPLES.md`](../CODE_AUDIT_PRINCIPLES.md).
-> Стан: **APP_VERSION 2.0.0, pytest 246/246**.
+> Стан: **APP_VERSION 2.0.0, pytest 247/247**.
 
 ---
 

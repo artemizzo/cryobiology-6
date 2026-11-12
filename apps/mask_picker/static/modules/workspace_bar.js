@@ -328,6 +328,7 @@ function _openExportModal() {
   $("#exportFinalize").checked = false;
   $("#exportSplitOn").checked = false;
   $("#exportMasks").checked = false;
+  $("#exportImages").checked = false;
   $("#exportDest").value = localStorage.getItem("exportDest") || "";
   _renderExportList();
   $("#exportModal").classList.add("open");
@@ -358,6 +359,7 @@ async function _applyExport() {
   const doFinalize = $("#exportFinalize").checked;
   const doSplit = $("#exportSplitOn").checked;
   const doMasks = $("#exportMasks").checked;
+  const doImages = $("#exportImages").checked;
   const dest = $("#exportDest").value.trim();
   const splitN = parseInt($("#exportSplitN").value, 10);
   if (doSplit && (!Number.isInteger(splitN) || splitN < 2 || splitN > 20)) {
@@ -387,6 +389,7 @@ async function _applyExport() {
         const url = "/api/workspace/export?stems="
           + encodeURIComponent(stems.join(","))
           + (doMasks ? "&masks=1" : "")
+          + (doImages ? "&images=1" : "")
           + (dest ? "&dest=" + encodeURIComponent(dest) : "");
         if (dest) {
           api(url)

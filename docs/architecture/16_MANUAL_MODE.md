@@ -73,7 +73,7 @@ pg.repair = { si, pieces: [[[x,y],…],…], selPiece, extend: null|{piece,end:"
 - Глобальний redo під час сеансу ігнорується (стек сеансу окремий).
 
 ## 3. Перевірка (2026-11-07)
-- pytest **246/246** (`tests/test_manual_mode.py`: discovery без дубля, каталог для фото без моделей,
+- pytest **247/247** (`tests/test_manual_mode.py`: discovery без дубля, каталог для фото без моделей,
   select створює порожню базу, bake полігона → `50000`, лінива матеріалізація для імпортованого stem).
 - Браузер (Playwright, хмарна сесія; сценарій у scratchpad не комітиться): 19/19 — картка «✋ Ручна
   розмітка» для фото без масок; draw → розрив по ребру (6 точок, 2 кінці) → 2-й розрив (обрано коротший
@@ -119,6 +119,7 @@ pg.repair = { si, pieces: [[[x,y],…],…], selPiece, extend: null|{piece,end:"
 | Експорт | Що в ZIP | Імпорт у новий датасет | Продовжити роботу |
 |---|---|---|---|
 | **📤 Експорт** (звичайний, `/api/workspace/export`) | `selected/ polygons/ groups/ selections.json labels.json group_classes.json overlays/<stem>__<клас>.png`; **без фото** | ✅ якщо фото вже є в датасеті; **у порожньому датасеті фото не з'являються** (розмітка є, а `images/` нема) | ✅ |
+| + галочка **«📷 Додати фото»** (`?images=1`, 2026-11-12) | + `images/<фото>` + сирий вихід обраної моделі `output/<model>/{overlay,npy,png,yolo}/` (для `manual` — ні: `ensure_base` відтворює з фото) | ✅ **і в порожній датасет** | ✅ (тест `test_export_with_photos_opens_in_empty_dataset`, браузер) |
 | + галочка «Маски» (`?masks=1`) | + `selected/<model>/semantic/`, `mask_groups/` | ✅ | ✅ |
 | + галочка «Фіналізувати» | спершу запікання незапечених, далі як звичайний | ✅ | ✅ |
 | + «Розбити на N» (Split) | N пакетів: `images/ output/<model>/ selected/ polygons/ groups/ labels.json group_classes.json selections.json` + `START_MASK_PICKER.bat`, README | ✅ навіть у порожній датасет | ✅ |

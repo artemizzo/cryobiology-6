@@ -176,3 +176,46 @@ def test_split_pack_keeps_groups(client_cfg):
     assert any(n.endswith(f"groups/{STEM}.json") for n in names), names
     assert any(n.endswith("group_classes.json") for n in names)
 
+
+
+def test_export_with_photos_opens_in_empty_dataset(tmp_path):
+    """Галочка «📷 Додати фото» (?images=1): архів містить фото + сирий вихід обраної
+    моделі; імпорт у ПОРОЖНІЙ датасет (без фото) → фото видно, обидва запікаються."""
+    import io, zipfile
+    src = _workspace(tmp_path / "src", with_model=True)
+    lab = np.zeros((H, W), np.int32); lab[10:30, 10:30] = 1
+    (src.output_root / "cyto2" / "npy").mkdir()
+    np.save(src.output_root / "cyto2" / "npy" / f"{STEM}.npy", lab)
+    Image.new("RGB", (W, H)).save(src.images_dir / "only_manual.jpg")
+    src.models = _discover_models(src.output_root, src.images_dir)
+    c1 = create_app(src, StateStore(src.selected_dir.parent / "selections.json")).test_client()
+    c1.post("/api/select", json={"stem": STEM, "model": "cyto2"})
+    c1.post("/api/select", json={"stem": "only_manual", "model": MANUAL_MODEL})
+    shape = {"label": "nucleus", "shape_type": "polygon", "group_id": None, "flags": {},
+             "points": [[40, 40], [60, 40], [60, 55], [40, 55]]}
+    for s in (STEM, "only_manual"):
+        c1.post(f"/api/polygons/{s}", json={"shapes": [shape], "imageHeight": H, "imageWidth": W})
+
+    plain = zipfile.ZipFile(io.BytesIO(c1.get("/api/workspace/export").data)).namelist()
+    assert not any(n.startswith(("images/", "output/")) for n in plain)
+    data = c1.get(f"/api/workspace/export?stems={STEM},only_manual&images=1").data
+    names = zipfile.ZipFile(io.BytesIO(data)).namelist()
+    assert f"images/{STEM}.jpg" in names and "images/only_manual.jpg" in names
+    assert f"output/cyto2/npy/{STEM}.npy" in names and f"output/cyto2/overlay/{STEM}.png" in names
+    assert not any(n.startswith("output/manual/") for n in names)   # основу відтворить ensure_base
+
+    dst = _workspace(tmp_path / "dst")
+    for p in dst.images_dir.iterdir():
+        p.unlink()                                                    # порожній датасет
+    dst.models = _discover_models(dst.output_root, dst.images_dir)
+    st2 = StateStore(dst.selected_dir.parent / "selections.json")
+    c2 = create_app(dst, st2).test_client()
+    resp = _import(c2, data, "export.zip")
+    assert resp["ok"] and resp["merged_count"] == 2, resp
+    items = {i["stem"]: i["available_models"] for i in c2.get("/api/catalog?fresh=1").get_json()["items"]}
+    assert items == {STEM: ["cyto2", MANUAL_MODEL], "only_manual": [MANUAL_MODEL]}
+    for s, model in ((STEM, "cyto2"), ("only_manual", MANUAL_MODEL)):
+        r = c2.post(f"/api/polygons-export/{s}", json={
+            "model": model, "shapes": [shape], "imageHeight": H, "imageWidth": W})
+        body = r.get_json()
+        assert r.status_code == 200 and body["baked"], (s, body)
