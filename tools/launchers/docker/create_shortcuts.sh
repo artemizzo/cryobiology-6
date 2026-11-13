@@ -26,7 +26,7 @@ Name=Mask Picker
 Comment=Mask Picker (Docker)
 Exec="$LAUNCHER" --hidden
 Path=$ROOT
-Icon=applications-science
+Icon=$ROOT/tools/launchers/docker/mask_picker.png
 Terminal=false
 Categories=Science;Graphics;
 EOF

@@ -100,6 +100,8 @@ ENTRYPOINT `python apps/segmentation/run_segmentation.py`, CMD `--help`.
 | Помилка | пише `_logs/show_error.ps1` і відкриває **нову консоль** (`-NoExit`): лог запуску + `docker compose logs --tail 200 mask-picker` | `_logs/show_error.sh` у першому знайденому терміналі; fallback `zenity --text-info` / `notify-send` |
 | Ручний режим | без `-Hidden`: статус у консоль, далі `docker compose up --build` на передньому плані + фоновий job відкриває браузер | без `--hidden` — те саме |
 
+- Іконка ярлика — `tools/launchers/docker/mask_picker.ico` (Windows, 16–256 px) / `mask_picker.png` (Linux `.desktop`),
+  зроблена з картинки мейнтейнера (2026-11-13). Немає `.ico` → стандартна іконка `shell32.dll,177`.
 - Лог останнього запуску — `_logs/launcher.log` (перезаписується; `_logs/` у `.gitignore`).
 - Вимкнення: редактор живе, поки живий Docker; restart-policy немає → після рестарту Docker сам не стартує.
 - Перевірка готовності (Windows) — `System.Net.WebRequest` на `http://127.0.0.1:5000/` з `Proxy = $null`,
