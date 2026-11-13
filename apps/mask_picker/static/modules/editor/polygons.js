@@ -49,19 +49,21 @@ export const polygonsMixin = {
     // null = default "navigate + edit": click a polygon/vertex/edge to edit it,
     // click empty does nothing. Edit is no longer a separate button — it is
     // simply the state when no tool is on.
-    if (tool !== "draw" && tool !== "pick" && tool !== "break" && tool !== null) return;
+    if (tool !== "draw" && tool !== "pick" && tool !== "break" && tool !== "ghost" && tool !== null) return;
     const pg = this.state.polygons;
     // Toggle off: clicking the already-active tool (or its hotkey) -> default.
     if (tool !== null && pg.tool === tool) tool = null;
     if (pg.tool === "draw" && tool !== "draw") this._polyCancelDraft();
     if (pg.tool === "break" && tool !== "break") this._repairCancel("інструмент змінено");
     this._svg().style.cursor = "";   // скинути «move» курсор зони виділення
+    if (pg.ghost) pg.ghost.hover = null;
     pg.tool = tool;
     this._toolbarPolygons().querySelectorAll("[data-poly-tool]").forEach((b) => {
       b.classList.toggle("btn--mini-active", b.dataset.polyTool === tool);
     });
     this._updateHint();
     this._polyRedraw();
+    this._ghostRedraw();
   },
 
   _svgCoordsFromEvent(e) {
@@ -89,6 +91,11 @@ export const polygonsMixin = {
     // Розрив полігона: увесь ввід — у сеанс ремонту (repair.js).
     if (pg.tool === "break" || pg.repair) {
       this._repairMouseDown(e, pt);
+      return;
+    }
+    // «📋 З тіні»: клік по полігону-тіні сусіднього фото → копія (ghost.js).
+    if (pg.tool === "ghost") {
+      this._ghostMouseDown(e, pt);
       return;
     }
 
@@ -246,6 +253,10 @@ export const polygonsMixin = {
       this._repairMouseMove(e, pt);
       return;
     }
+    if (pg.tool === "ghost") {
+      this._ghostMouseMove(pt);
+      return;
+    }
 
     if (pg.tool === "draw") {
       // edit-in-draw: drag a vertex grabbed in Draw (mirror edit-mode drag).
@@ -339,7 +350,7 @@ export const polygonsMixin = {
     }
     if (this.state.activeTab !== "polygons") return;
     const pg = this.state.polygons;
-    if (pg.tool === "break" || pg.repair) return;
+    if (pg.tool === "break" || pg.repair || pg.tool === "ghost") return;
 
     if (pg.tool === "draw" || pg.tool === "pick") {
       // edit-in-draw: finish a vertex drag started in Draw. Undo вже запушено
@@ -430,7 +441,7 @@ export const polygonsMixin = {
     const now = performance.now();
     if (now - (pg._dblHandledT || 0) < DBL_CLICK_MS) return;
     pg._dblHandledT = now;
-    if (pg.tool === "break" || pg.repair) return;
+    if (pg.tool === "break" || pg.repair || pg.tool === "ghost") return;
 
     if (pg.tool === "draw" && pg.draft) {   // mid-draft: dblclick closes polygon
       if (pg.draft.points.length >= 3) {
@@ -1047,16 +1058,27 @@ export const polygonsMixin = {
   },
 
   _polyResizeVertices() {
-    const r = Math.max(3, 7 / this.state.scale);
+    const r = this._polyVertexR();
     this._layerVertices().querySelectorAll("circle").forEach((c) => {
       c.setAttribute("r", String(r));
     });
-    this._layerDraft().querySelectorAll("circle").forEach((c) => {
-      c.setAttribute("r", String(r));
-    });
+    if (this.state.polygons.repair) {
+      this._repairRedraw();          // кінці розриву більші за звичайні точки
+    } else {
+      this._layerDraft().querySelectorAll("circle").forEach((c) => {
+        c.setAttribute("r", String(r));
+      });
+    }
     this._layerMarkers().querySelectorAll("circle").forEach((c) => {
-      c.setAttribute("r", String(Math.max(4, 8 / this.state.scale)));
+      c.setAttribute("r", String(this._polyVertexR(5)));
     });
+  },
+
+  // Радіус точок у image-px, щоб на ЕКРАНІ він був сталим (~cssPx) за будь-якого
+  // зуму. Раніше max(3, 7/scale): після ~2.5× точки переставали зменшуватись у
+  // image-px і на екрані роздувались у великі розмиті кола.
+  _polyVertexR(cssPx = 4.5) {
+    return cssPx * this._pxPerCss();
   },
 
   _polyShapeIsRejected(sh) {
@@ -1084,7 +1106,7 @@ export const polygonsMixin = {
       const strokeW = isSelected ? 2.5 : isHover ? 2 : 1.5;
       poly.setAttribute("style",
         `fill:${_hexToRgba(color, fillAlpha)};stroke:${_hexToRgba(color, strokeAlpha)};` +
-        `stroke-width:${strokeW};vector-effect:non-scaling-stroke;cursor:${pg.tool === null ? "move" : "pointer"};`);
+        `stroke-width:calc(${strokeW}px * var(--zinv, 1));vector-effect:non-scaling-stroke;cursor:${pg.tool === null ? "move" : "pointer"};`);
       poly.setAttribute("class", "polygon-shape");
       poly.dataset.si = String(si);
       layer.appendChild(poly);
@@ -1095,7 +1117,7 @@ export const polygonsMixin = {
     const pg = this.state.polygons;
     const layer = this._layerVertices();
     layer.innerHTML = "";
-    const r = Math.max(3, 7 / this.state.scale);
+    const r = this._polyVertexR();
     pg.shapes.forEach((sh, si) => {
       if (this._polyShapeIsRejected(sh)) return;
       if (pg.repair && pg.repair.si === si) return;
@@ -1127,7 +1149,7 @@ export const polygonsMixin = {
       rect.setAttribute("width", String(b.x1 - b.x0)); rect.setAttribute("height", String(b.y1 - b.y0));
       rect.setAttribute("class", "polygon-selection-box");
       rect.setAttribute("style",
-        "fill:rgba(255,255,255,0.04);stroke:#ffffff;stroke-width:1;stroke-dasharray:5 4;" +
+        "fill:rgba(255,255,255,0.04);stroke:#ffffff;stroke-width:calc(1px * var(--zinv, 1));stroke-dasharray:5 4;" +
         "vector-effect:non-scaling-stroke;pointer-events:none;");
       layer.insertBefore(rect, layer.firstChild);
     }
@@ -1156,7 +1178,7 @@ export const polygonsMixin = {
     poly.style.fill = draftColor;
     poly.style.fillOpacity = "0.18";   // translucent label colour (matches CSS draft fill)
     layer.appendChild(poly);
-    const r = Math.max(3, 7 / this.state.scale);
+    const r = this._polyVertexR();
     pg.draft.points.forEach(([x, y]) => {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.setAttribute("cx", String(x));
@@ -1190,7 +1212,7 @@ export const polygonsMixin = {
     const cu = this.state.cleanup;
     const layer = this._layerMarkers();
     layer.innerHTML = "";
-    const r = Math.max(3, 7 / this.state.scale);
+    const r = this._polyVertexR();
     cu.markers.forEach((m, i) => {
       const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
       c.setAttribute("cx", String(m.x));

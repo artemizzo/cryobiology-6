@@ -391,6 +391,8 @@
           <svg id="polygonSvg" class="cleanup__svg" xmlns="http://www.w3.org/2000/svg"
                preserveAspectRatio="none">
             <g id="polygonMarkersLayer"></g>
+            <!-- Тінь (onion skin) полігонів сусідніх фото — ghost.js, під власними полігонами -->
+            <g id="polygonGhostLayer" style="pointer-events:none"></g>
             <g id="polygonShapesLayer"></g>
             <g id="polygonDraftLayer"></g>
             <g id="polygonVerticesLayer"></g>
@@ -482,7 +484,12 @@
         <div class="cleanup__toolmode" role="group" title="Інструмент">
           <button class="btn btn--mini" data-poly-tool="draw" title="Малювати полігон (D). Клік ще раз або Esc — вимкнути. За замовч.: редагування кліком по полігону/вершині/ребру">✏️ Draw</button>
           <button class="btn btn--mini" data-poly-tool="pick" title="Seed однієї клітини: клікни по інстансу на масці (P)">🎯 Pick</button>
+          <button class="btn btn--mini" data-poly-tool="ghost" title="Скопіювати полігон із тіні сусіднього фото (G): клік усередині полігона-тіні">📋 З тіні</button>
           <button class="btn btn--mini" data-poly-tool="break" title="Розірвати контур полігона (B): клік по ребру або точці. Далі: розірвати ще раз, видалити фрагмент, домалювати від кінця, з'єднати/замкнути">✂ Розрив</button>
+        </div>
+        <div class="cleanup__toolmode" role="group" title="Тінь сусідніх фото (як onion skin в анімації)">
+          <button id="polyGhostPrev" class="btn btn--mini" title="Показати тінню полігони ПОПЕРЕДНЬОГО фото у списку (рожеві)">👻◀ Попереднє</button>
+          <button id="polyGhostNext" class="btn btn--mini" title="Показати тінню полігони НАСТУПНОГО фото у списку (зелені)">Наступне ▶👻</button>
         </div>
         <button id="polyRepairDelete" class="btn btn--ghost" title="Видалити обраний фрагмент розірваного контуру (Delete)" disabled>🗑 Фрагмент</button>
         <button id="polyRepairClose" class="btn btn--ghost" title="Замкнути розірваний контур: кінці з'єднуються прямою (Enter)" disabled>✔ Замкнути</button>

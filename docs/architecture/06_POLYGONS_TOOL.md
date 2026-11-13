@@ -21,6 +21,8 @@ SoT — `pg.shapes` (браузер) → `polygons/<stem>.json` (LabelMe envelop
   auto-switch у `null`+select).
 - **`"break"`** (B, `editor/repair.js`): розрив контуру → видалення ділянки → домальовування →
   з'єднання/замикання. Окремий сеанс ремонту, відкриті лінії не потрапляють у `pg.shapes` → [`16`](16_MANUAL_MODE.md)§2.
+- **`"ghost"`** (G, `editor/ghost.js`, «📋 З тіні»): клік усередині полігона-тіні сусіднього фото → копія в
+  `pg.shapes` (той самий клас; невідомий → перший клас; дубль не створюється; 1 undo). Див. §11.
 - **Toggle:** повторний клік по активному tool / хоткей / Esc → `null`. open→null; `KeyE`→null.
 
 ## 2. Диспетч подій (важливо — спільний SVG для polygons І groups)
@@ -102,3 +104,26 @@ Mark groups dirty + `_groupsScheduleAutosave`.
 - shape add/close → push pg.shapes; delete → remap groups (compound); edit-drag → push on first move.
 - Reserved-id при bake + Layer 2 → [`09`](09_BAKING_AND_RESERVED_IDS.md). polygon_index нестабільність → [`01`](01_DATA_MODEL_AND_ID_SPACES.md)§3.3.
 - Pick→covered споживачі → [`05`](05_CLEANUP_TOOL.md). polygon_indices у групах → [`07`](07_GROUPS_TOOL.md). Undo → [`10`](10_UNDO_HISTORY.md).
+
+## 11. Тінь сусідніх фото — onion skin (`editor/ghost.js`, 2026-11-13)
+- Перемикачі `#polyGhostPrev` / `#polyGhostNext` («👻◀ Попереднє» / «Наступне ▶👻»): полігони сусіднього фото
+  за `state.catalog` (без виключених; НЕ фільтр сайдбара) — GET `/api/polygons/<сусід>`. Стан `pg.ghost =
+  {showPrev, showNext, prev, next, hover}`; перемикачі в `localStorage["mask_picker_ghost"]` → лишаються
+  увімкненими при переході до іншого фото (`_ghostOnOpen` з `open()`, async після того, як відомі W/H).
+- Шар `#polygonGhostLayer` (під `#polygonShapesLayer`, `pointer-events:none`): попереднє — рожевий `#ff6b9d`,
+  наступне — зелений `#5ee08a`, пунктир; підсвітка під курсором лише в tool `ghost`. Схований у Cleanup/Groups і
+  при hold-O. Тінь НЕ входить у `pg.shapes` → не зберігається/не запікається.
+- Інший розмір сусіднього фото → координати масштабуються (`imageWidth/Height` з його polygons.json).
+- Hit-test: серед перекритих тіней береться менша за площею (дрібна везикула поверх великої клітини).
+- Обмеження: тінь будується лише з полігонів сусіда; маска моделі сусіда (растр) у тінь не потрапляє.
+
+## 12. Чіткість при зумі (2026-11-13)
+- Зум = CSS `transform: scale()` контейнера `.cleanup__zoom` (canvas + SVG). Було `will-change: transform`
+  постійно → браузер растеризував шар один раз і розтягував → SVG-полігони пікселі/розмиті. Тепер клас
+  `.is-zooming` (і `will-change`) лише під час зуму/пану, знімається через 150 мс (`zoompan._applyZoomTransform`).
+- `vector-effect: non-scaling-stroke` компенсує лише viewBox, не CSS-scale → лінії товщали. Усі stroke-width
+  редакторного SVG = `calc(Npx * var(--zinv, 1))`, `--zinv = 1/scale` ставиться на `#polygonSvg` при зумі
+  (style.css, polygons/repair/ghost/groups.js). Нові SVG-елементи редактора — так само.
+- Радіус точок: `_polyVertexR(cssPx=4.5) = cssPx * _pxPerCss()` — сталий на екрані (було `max(3, 7/scale)` →
+  при ~15× точка 217 px на екрані; тепер 9 px).
+

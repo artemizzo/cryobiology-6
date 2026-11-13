@@ -390,8 +390,10 @@ kbd {
   position: absolute; top: 0; left: 0;
   width: 100%; height: 100%;
   transform-origin: 0 0;
-  will-change: transform;
 }
+/* Лише під час зуму/пану (zoompan.js); постійний will-change робив SVG-полігони
+   розмитими/піксельними при наближенні (шар не перемальовувався). */
+.cleanup__zoom.is-zooming { will-change: transform; }
 .cleanup__canvas {
   position: absolute; top: 0; left: 0;
   width: 100%; height: 100%;
@@ -502,14 +504,16 @@ kbd {
   overflow: visible;
 }
 .cleanup__svg.svg--active { pointer-events: all; }
+/* --zinv = 1/scale (zoompan.js). non-scaling-stroke компенсує лише viewBox, а не
+   CSS-scale зум-контейнера → без множника лінії товщали при наближенні. */
 
 /* Markers (cleanup-режим — "дорозмітити") */
 .polygon-marker {
   fill: rgba(255, 210, 60, 0.85);
-  stroke: #05121e; stroke-width: 1;
+  stroke: #05121e; stroke-width: calc(1px * var(--zinv, 1));
   cursor: pointer;
 }
-.polygon-marker--hover { fill: #ffd23c; stroke-width: 1.5; }
+.polygon-marker--hover { fill: #ffd23c; stroke-width: calc(1.5px * var(--zinv, 1)); }
 .polygon-marker--ghost {
   fill: rgba(255, 210, 60, 0.35);
   stroke: rgba(255, 210, 60, 0.55);
@@ -521,37 +525,37 @@ kbd {
 .polygon-shape {
   fill: rgba(110, 168, 255, 0.15);
   stroke: rgba(110, 168, 255, 0.9);
-  stroke-width: 1.5;
+  stroke-width: calc(1.5px * var(--zinv, 1));
   vector-effect: non-scaling-stroke;
   cursor: pointer;
 }
 .polygon-shape--hover {
   fill: rgba(110, 168, 255, 0.30);
-  stroke: #6ea8ff; stroke-width: 2;
+  stroke: #6ea8ff; stroke-width: calc(2px * var(--zinv, 1));
 }
 .polygon-shape--selected {
   fill: rgba(110, 168, 255, 0.32);
-  stroke: #9cc5ff; stroke-width: 2.5;
+  stroke: #9cc5ff; stroke-width: calc(2.5px * var(--zinv, 1));
 }
 .polygon-shape--draft {
   fill: rgba(110, 168, 255, 0.18);
-  stroke: #6ea8ff; stroke-width: 2;
+  stroke: #6ea8ff; stroke-width: calc(2px * var(--zinv, 1));
   pointer-events: none;
 }
 
 /* Vertices — теж сині, трохи крупніші (r обчислюється в JS) */
 .polygon-vertex {
-  fill: #6ea8ff; stroke: #05121e; stroke-width: 1;
+  fill: #6ea8ff; stroke: #05121e; stroke-width: calc(1px * var(--zinv, 1));
   vector-effect: non-scaling-stroke;
   cursor: grab;
 }
-.polygon-vertex--hover { fill: #9cc5ff; stroke-width: 1.5; }
-.polygon-vertex--selected { fill: #cfe2ff; stroke: #05121e; stroke-width: 2; }
+.polygon-vertex--hover { fill: #9cc5ff; stroke-width: calc(1.5px * var(--zinv, 1)); }
+.polygon-vertex--selected { fill: #cfe2ff; stroke: #05121e; stroke-width: calc(2px * var(--zinv, 1)); }
 .polygon-vertex--dragging { cursor: grabbing; }
 
 /* Draft edge (лінія до курсора під час малювання) — solid, crisp */
 .polygon-draft-edge {
-  stroke: #6ea8ff; stroke-width: 1.5; fill: none;
+  stroke: #6ea8ff; stroke-width: calc(1.5px * var(--zinv, 1)); fill: none;
   vector-effect: non-scaling-stroke; pointer-events: none;
 }
 
@@ -559,6 +563,7 @@ kbd {
    щоб чисто побачити оригінальну картинку без жодних обведень. Маркери
    залишаємо (вони не "обведення", а hint про пропущену клітину). */
 .cleanup__canvas-wrap.hold-orig #cleanupCanvasMarks { display: none !important; }
+.cleanup__canvas-wrap.hold-orig #polygonGhostLayer,
 .cleanup__canvas-wrap.hold-orig #polygonShapesLayer,
 .cleanup__canvas-wrap.hold-orig #polygonDraftLayer,
 .cleanup__canvas-wrap.hold-orig #polygonVerticesLayer { display: none !important; }
@@ -601,7 +606,7 @@ kbd {
 /* Day 6: Lasso freehand path — Edit drag-empty multi-select (replaces rubber-band). */
 .polygon__lasso {
   fill: rgba(110, 168, 255, 0.10);
-  stroke: #6ea8ff; stroke-width: 1.5;
+  stroke: #6ea8ff; stroke-width: calc(1.5px * var(--zinv, 1));
   stroke-dasharray: 4 3; vector-effect: non-scaling-stroke;
   fill-rule: evenodd;
   pointer-events: none;

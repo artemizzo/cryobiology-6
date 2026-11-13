@@ -97,6 +97,8 @@ export const eventsMixin = {
     $("#polyDeleteShape").onclick = () => this._polyDeleteSelectedShape();
     $("#polyRepairDelete").onclick = () => this._repairDeleteSelected();
     $("#polyRepairClose").onclick = () => this._repairCommit();
+    $("#polyGhostPrev").onclick = () => this._ghostToggle("prev");
+    $("#polyGhostNext").onclick = () => this._ghostToggle("next");
     $("#polyZoomReset").onclick = () => this.resetZoom();
     // Day 3c′: base label set+persist перенесено у labels.js _buildBaseChipDropdown handler.
     this._toolbarPolygons().querySelectorAll("[data-poly-bg]").forEach((btn) => {

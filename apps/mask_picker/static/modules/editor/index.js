@@ -55,6 +55,7 @@ import { groupsMixin } from "./groups.js";
 import { keysMixin } from "./keys.js";
 import { historyMixin } from "./history.js";
 import { repairMixin } from "./repair.js";
+import { ghostMixin } from "./ghost.js";
 
 export const editor = {
   state: {
@@ -121,6 +122,7 @@ export const editor = {
       bgSource: "original",
       envelope: null,               // LabelMe обгортка (крім shapes)
       repair: null,                 // сеанс розриву полігона (repair.js) або null
+      ghost: null,                  // тінь сусідніх фото (ghost.js) або null
     },
 
     // --- GROUPS sub-state (Day 4-5 cell grouping) ---
@@ -148,6 +150,7 @@ export const editor = {
   _svg:    () => $("#polygonSvg"),
   _layerMarkers:  () => $("#polygonMarkersLayer"),
   _layerShapes:   () => $("#polygonShapesLayer"),
+  _layerGhost:    () => $("#polygonGhostLayer"),
   _layerDraft:    () => $("#polygonDraftLayer"),
   _layerVertices: () => $("#polygonVerticesLayer"),
   _lasso:  () => $("#polygonLasso"),
@@ -199,6 +202,7 @@ export const editor = {
   ...keysMixin,
   ...historyMixin,
   ...repairMixin,
+  ...ghostMixin,
 
   // =================================================================
   //                              OPEN / CLOSE
@@ -314,6 +318,7 @@ export const editor = {
       this._activateTab(tab);
       this._updateStats();
       this._updateHint();
+      this._ghostOnOpen();   // тінь сусідніх фото (async; W/H уже відомі)
     } catch (e) {
       showToast(`Editor: ${e.message}`, "err", 4000);
       console.error(e);

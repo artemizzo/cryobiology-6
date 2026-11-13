@@ -146,6 +146,7 @@ export const keysMixin = {
     if (e.code === "KeyE") { e.preventDefault(); this._setPolyTool(null); return; }
     if (e.code === "KeyP") { e.preventDefault(); this._setPolyTool("pick"); return; }
     if (e.code === "KeyB") { e.preventDefault(); this._setPolyTool("break"); return; }
+    if (e.code === "KeyG") { e.preventDefault(); this._setPolyTool("ghost"); return; }
     // Day 3c′: S = Seed all (одна модель), Shift+S = Multi-seed (cross-model).
     if (e.code === "KeyS" && !ctrl) {
       e.preventDefault();

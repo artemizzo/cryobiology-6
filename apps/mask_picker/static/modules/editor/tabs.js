@@ -79,6 +79,7 @@ export const tabsMixin = {
       this._layerShapes().style.display = "none";
       this._layerVertices().style.display = "none";
       this._layerDraft().style.display = "none";
+      this._layerGhost().style.display = "none";
       this._layerMarkers().style.display = "";
       // Bug F (v1.16.2): відновити видимість маски (marks canvas) за станом
       // галки. _activateTab(groups/polygons) ставить display:none, а повернення
@@ -91,10 +92,12 @@ export const tabsMixin = {
       this._layerShapes().style.display = "";
       this._layerVertices().style.display = "";
       this._layerDraft().style.display = "";
+      this._layerGhost().style.display = "";
       this._layerMarkers().style.display = this.state.polygons.bgSource === "overlay" ? "" : "";
       this._cMarks().style.display = "none";
       this._groupsClearVisualLayers();  // Bug D/J: groups overlay + boundary + canvas
       this._polyRedraw();
+      this._ghostRedraw();
     } else if (tab === "groups") {
       this._setBgFromActive();
       // Shapes/vertices видимі read-only (overlay поверх baked masks),
@@ -102,6 +105,7 @@ export const tabsMixin = {
       this._layerShapes().style.display = "";
       this._layerVertices().style.display = "none";
       this._layerDraft().style.display = "none";
+      this._layerGhost().style.display = "none";
       this._layerMarkers().style.display = "none";
       this._cMarks().style.display = "none";
       const lg = this._groupsLayer(); if (lg) lg.style.display = "";
@@ -178,6 +182,10 @@ export const tabsMixin = {
             `<kbd>Shift</kbd>+клік — обрати фрагмент, <kbd>Delete</kbd> — видалити його. ` +
             `Клік по кінцю (біле коло) — домальовувати. <kbd>Enter</kbd> — замкнути. ` +
             `<kbd>Ctrl+Z</kbd> — крок назад, <kbd>Esc</kbd> — скасувати розрив.`;
+      } else if (this.state.polygons.tool === "ghost") {
+        hint.innerHTML = `📋 <b>З тіні</b>: клік усередині полігона-тіні (рожевий — попереднє фото, ` +
+          `зелений — наступне) копіює його в поточну розмітку. <kbd>Ctrl+Z</kbd> — скасувати. ` +
+          `<kbd>G</kbd>/<kbd>E</kbd> — вийти.`;
       } else if (this.state.polygons.tool === "break") {
         hint.innerHTML = `✂ <b>Розрив</b>: клік по ребру (з'являться дві точки-кінці) або по точці ` +
           `полігона — розірвати контур у цьому місці. <kbd>B</kbd>/<kbd>E</kbd> — вийти.`;

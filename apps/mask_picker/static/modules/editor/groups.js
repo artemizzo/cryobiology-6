@@ -563,7 +563,7 @@ export const groupsMixin = {
     pl.setAttribute("points", lasso.path.map(([x, y]) => `${x},${y}`).join(" "));
     pl.setAttribute("fill", "none");
     pl.setAttribute("stroke", "#ffd84d");
-    pl.setAttribute("stroke-width", "2");
+    pl.style.strokeWidth = "calc(2px * var(--zinv, 1))";
     pl.setAttribute("stroke-dasharray", "4 3");
     pl.setAttribute("vector-effect", "non-scaling-stroke");
     pl.setAttribute("pointer-events", "none");
@@ -764,7 +764,7 @@ export const groupsMixin = {
         if (isActive) {
           poly.setAttribute("stroke", "#ffffff");
           poly.setAttribute("stroke-opacity", "0.95");
-          poly.setAttribute("stroke-width", "1");
+          poly.style.strokeWidth = "calc(1px * var(--zinv, 1))";
         } else {
           poly.setAttribute("stroke", "none");
         }
@@ -790,7 +790,7 @@ export const groupsMixin = {
           shape.points.map(([x, y]) => `${x},${y}`).join(" "));
         poly.setAttribute("fill", "rgba(0,220,255,0.20)");
         poly.setAttribute("stroke", "rgba(0,220,255,0.95)");
-        poly.setAttribute("stroke-width", "2");
+        poly.style.strokeWidth = "calc(2px * var(--zinv, 1))";
         poly.setAttribute("stroke-dasharray", "5,3");
         poly.setAttribute("vector-effect", "non-scaling-stroke");
         poly.setAttribute("pointer-events", "none");

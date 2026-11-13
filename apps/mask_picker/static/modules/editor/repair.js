@@ -377,7 +377,7 @@ export const repairMixin = {
     layer.innerHTML = "";
     const sh = pg.shapes[r.si];
     const color = getLabelColor((sh && sh.label) || DEFAULT_LABEL);
-    const rad = Math.max(3, 7 / this.state.scale);
+    const rad = this._polyVertexR();
     r.pieces.forEach((pc, k) => {
       const line = document.createElementNS(SVG_NS, "polyline");
       line.setAttribute("points", pc.map((p) => `${p[0]},${p[1]}`).join(" "));
@@ -385,7 +385,7 @@ export const repairMixin = {
       line.setAttribute("class", "repair-piece" + (sel ? " repair-piece--selected" : ""));
       line.setAttribute("style",
         `fill:none;stroke:${sel ? "#ff4d4f" : _hexToRgba(color, 0.95)};` +
-        `stroke-width:${sel ? 3 : 2};vector-effect:non-scaling-stroke;` +
+        `stroke-width:calc(${sel ? 3 : 2}px * var(--zinv, 1));vector-effect:non-scaling-stroke;` +
         (sel ? "stroke-dasharray:6 4;" : ""));
       layer.appendChild(line);
       pc.forEach(([x, y], vi) => {
@@ -398,7 +398,7 @@ export const repairMixin = {
           ((r.extend.end === "end") === (vi === pc.length - 1)) && isEnd;
         c.setAttribute("class", "repair-vertex" + (isEnd ? " repair-vertex--end" : ""));
         c.setAttribute("style", isEnd
-          ? `fill:${active ? "#ffd666" : "#ffffff"};stroke:${_hexToRgba(color, 1)};stroke-width:2;vector-effect:non-scaling-stroke;`
+          ? `fill:${active ? "#ffd666" : "#ffffff"};stroke:${_hexToRgba(color, 1)};stroke-width:calc(2px * var(--zinv, 1));vector-effect:non-scaling-stroke;`
           : `fill:${_hexToRgba(color, 0.9)};`);
         layer.appendChild(c);
       });
@@ -411,7 +411,7 @@ export const repairMixin = {
       ln.setAttribute("x1", String(from[0])); ln.setAttribute("y1", String(from[1]));
       ln.setAttribute("x2", String(pg.cursor.x)); ln.setAttribute("y2", String(pg.cursor.y));
       ln.setAttribute("style",
-        `stroke:${_hexToRgba(color, 0.8)};stroke-width:1.5;stroke-dasharray:4 3;vector-effect:non-scaling-stroke;`);
+        `stroke:${_hexToRgba(color, 0.8)};stroke-width:calc(1.5px * var(--zinv, 1));stroke-dasharray:4 3;vector-effect:non-scaling-stroke;`);
       layer.appendChild(ln);
     }
   },

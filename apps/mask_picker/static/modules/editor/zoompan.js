@@ -16,6 +16,17 @@ export const zoompanMixin = {
     const z = this._zoom();
     if (!z) return;
     z.style.transform = `translate(${this.state.panX}px, ${this.state.panY}px) scale(${this.state.scale})`;
+    // will-change: transform лише ПІД ЧАС зуму/пану (плавно), а через 150 мс після
+    // останнього руху знімаємо — браузер перемальовує шар у новому масштабі, і лінії
+    // та точки полігонів знову чіткі. Постійний will-change розтягував знімок шару,
+    // зроблений при scale=1 → пікселі/розмиття при наближенні.
+    // Товщина ліній у SVG множиться на --zinv (style.css): non-scaling-stroke не
+    // компенсує CSS-scale контейнера → без цього лінії товщали при наближенні.
+    const svg = this._svg && this._svg();
+    if (svg) svg.style.setProperty("--zinv", String(1 / this.state.scale));
+    z.classList.add("is-zooming");
+    clearTimeout(this._zoomSettleT);
+    this._zoomSettleT = setTimeout(() => z.classList.remove("is-zooming"), 150);
     if (this.state.open && this.state.activeTab === "polygons") {
       this._polyResizeVertices();
     }
