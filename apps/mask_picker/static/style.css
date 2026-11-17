@@ -378,13 +378,18 @@ kbd {
 }
 .cleanup__header {
   display: flex; align-items: baseline; justify-content: space-between;
-  padding: 0 0 8px; border-bottom: 1px solid var(--border); margin-bottom: 10px;
+  padding: 0 28px 8px 0; border-bottom: 1px solid var(--border); margin-bottom: 10px;
 }
-.cleanup__header h2 { margin: 0; font-size: 16px; }
+/* Назва фото стискається (…), а не штовхає вправо ◀ ▶ у вузькому вікні; повна — у підказці (title). */
+.cleanup__header h2 {
+  margin: 0; font-size: 16px; flex: 1 1 0; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cleanup__header .editor__tabs, .cleanup__header .editor__nav { flex-shrink: 0; }
 /* Фіксована ширина: інакше довжина тексту (shapes/points/undo, «завантаження») зсувала ◀ ▶ ліворуч від нього. */
 .cleanup__stats {
   font-size: 12px; color: var(--fg-dim); font-variant-numeric: tabular-nums;
-  width: 320px; flex: 0 0 320px; text-align: right; white-space: nowrap;
+  width: 260px; flex: 0 0 260px; text-align: right; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
 /* Перехід між фото прямо з редактора (◀ N/M ▶) — ліворуч від лічильника shapes. */

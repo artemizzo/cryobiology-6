@@ -11,7 +11,9 @@ Mask Picker — запуск через Docker (Windows).
     → усе видно в консолі; редактор працює на передньому плані, як `docker compose up`
       (Ctrl+C — зупинити). Браузер відкриється сам, коли сервер відповість.
 
-  Сам запускає Docker Desktop, якщо він не працює. Якщо редактор уже працює — лише відкриває браузер.
+  Сам запускає Docker Desktop, якщо він не працює. Ярлик (-Hidden) ЗАВЖДИ робить `compose up -d --build`: якщо
+  код не мінявся — це секунди й контейнер не чіпається; після `git pull` — перезбирає (інакше лишалась стара версія,
+  коли Docker не вимикали). Вручну без -Hidden: якщо редактор уже працює — лише відкриває браузер.
   Редактор зупиняється разом із Docker Desktop і сам після старту Docker не запускається.
   Датасет — як у docker compose: змінна DATASET у файлі .env (дефолт vesicles_good).
   Лог останнього запуску: _logs\launcher.log
@@ -209,7 +211,7 @@ if (-not (Test-DockerReady)) {
 }
 Write-Log "docker ready"
 
-if ((Test-EditorRunning) -and (Test-EditorResponds)) {
+if ((-not $Hidden) -and (Test-EditorRunning) -and (Test-EditorResponds)) {
     Set-Status "Mask Picker уже працює — відкриваю браузер."
     Close-Splash
     Start-Process $Url
@@ -239,7 +241,7 @@ if (-not $Hidden) {
     exit $LASTEXITCODE
 }
 
-Set-Status "Запускаю редактор...`n(перший раз або після оновлення — до 10 хв)"
+Set-Status "Запускаю / перевіряю оновлення...`n(перший раз або після оновлення — до 10 хв)"
 $code = Invoke-Docker @("compose", "up", "-d", "--build", "mask-picker")
 if ($code -ne 0) { Fail "docker compose up завершився з кодом $code (див. вивід вище)." }
 

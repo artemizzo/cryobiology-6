@@ -135,6 +135,7 @@ export const tabsMixin = {
     const { stem, model } = this.state;
     const t = $("#cleanupTitle");
     t.textContent = `Editor: ${stem}${model ? " — " + model : ""}`;
+    t.title = t.textContent;
     const pos = $("#editorPhotoPos");
     if (pos) {
       const list = filtered();

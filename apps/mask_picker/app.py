@@ -150,6 +150,9 @@ def create_app(cfg: Config, state: StateStore) -> Flask:
         static_folder=str(HERE / "static"),
         template_folder=str(HERE / "templates"),
     )
+    # Браузер завжди перепитує статику (ETag → 304, дешево): інакше після оновлення
+    # (git pull + rebuild) лишались старі JS/CSS з кешу — ES-модулі без версій у шляху.
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
     catalog = CatalogService(cfg, state)
     routes.register_all(app, cfg, state, catalog)
     return app

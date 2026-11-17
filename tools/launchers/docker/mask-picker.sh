@@ -7,7 +7,8 @@
 #     → віконце-статус (zenity, якщо є; інакше сповіщення). Якщо щось падає — відкривається
 #       ТЕРМІНАЛ з повним логом і логами контейнера.
 #
-# Сам запускає Docker, якщо він не працює. Якщо редактор уже працює — лише відкриває браузер.
+# Сам запускає Docker, якщо він не працює. З --hidden (ярлик) ЗАВЖДИ `compose up -d --build` (без змін коду — секунди,
+# контейнер не чіпається; після git pull — перезбирає). Без --hidden: якщо редактор уже працює — лише браузер.
 # Файли в data/ створюються від імені поточного користувача (MP_UID/MP_GID → docker-compose.yml).
 # Датасет — DATASET у файлі .env (дефолт vesicles_good). Лог останнього запуску: _logs/launcher.log
 
@@ -132,7 +133,7 @@ if ! docker_ready; then
 fi
 log "docker ready"
 
-if editor_running && editor_responds; then
+if [ "$HIDDEN" = 0 ] && editor_running && editor_responds; then
     status "Mask Picker уже працює — відкриваю браузер."
     stop_splash
     open_browser
@@ -148,7 +149,7 @@ if [ "$HIDDEN" = 0 ]; then
     exit $?
 fi
 
-status "Запускаю редактор... (перший раз або після оновлення — до 10 хв)"
+status "Запускаю / перевіряю оновлення... (перший раз або після оновлення — до 10 хв)"
 log ""
 log "> docker compose up -d --build mask-picker"
 docker compose up -d --build mask-picker >> "$LOG" 2>&1 || fail "docker compose up завершився з помилкою (див. вивід вище)."
