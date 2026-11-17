@@ -102,6 +102,7 @@ export const eventsMixin = {
     $("#editorPrevPhoto").onclick = () => this.gotoPhoto(-1);
     $("#editorNextPhoto").onclick = () => this.gotoPhoto(1);
     $("#trackCreate").onclick = () => this._trackCreate();
+    $("#trackAssign").onclick = () => this._trackAssign();
     $("#trackOutside").onclick = () => this._trackOutside();
     $("#trackSplit").onclick = () => this._trackSplit();
     $("#trackMerge").onclick = () => this._trackMerge();

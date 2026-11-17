@@ -160,6 +160,12 @@ export const historyMixin = {
     const h = this._historyEnsure();
     const entry = h.undo.pop();
     if (!entry) { showToast("Нема що відмінити", "info", 1000); return; }
+    if (entry.trackop) {                 // серверна операція з треком (tracks.js)
+      h.redo.push(entry);
+      this._historyUpdateButtons();
+      this._trackOpUndo(entry.trackop);
+      return;
+    }
     // Поточний стан кожного домену запису == AFTER → у redo.
     const redoSnaps = {};
     for (const domain of Object.keys(entry.snaps)) {
@@ -174,6 +180,11 @@ export const historyMixin = {
     const h = this._historyEnsure();
     const entry = h.redo.pop();
     if (!entry) return;
+    if (entry.trackop) {
+      this._historyUpdateButtons();
+      this._trackOpRedo(entry.trackop);
+      return;
+    }
     // Поточний стан кожного домену запису == BEFORE → у undo.
     const undoSnaps = {};
     for (const domain of Object.keys(entry.snaps)) {

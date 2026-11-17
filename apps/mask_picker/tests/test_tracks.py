@@ -212,3 +212,26 @@ def test_tracks_travel_with_export_import_and_pack(ws, tmp_path):
     assert f"{root}/tracks.json" in zn and f"{root}/tracks/seq_1_mot.txt" in zn
     mot = zipfile.ZipFile(z).read(f"{root}/tracks/seq_1_mot.txt").decode().splitlines()
     assert len(mot) == 10 and mot[0].startswith("1,5,10.00,10.00,20.00,20.00")
+
+
+def test_undo_server_ops(ws):
+    """split / merge / delete повертають undo_id; /api/tracks/undo відновлює файли й стан."""
+    client, cfg, st = ws
+    save(client, FR[0], [tshape(SQ(10, 10), 4)])
+    before = {s: shapes_of(cfg, s) for s in FR}
+    tracks_before = T.load_tracks(cfg)["tracks"]
+
+    r = client.post("/api/tracks/4/split", json={"stem": FR[5]}).get_json()
+    assert r["ok"] and r["undo_id"]
+    assert track_shape(cfg, FR[6], 4) is None
+    u = client.post("/api/tracks/undo", json={"undo_id": r["undo_id"]}).get_json()
+    assert u["ok"]
+    assert {s: shapes_of(cfg, s) for s in FR} == before
+    assert T.load_tracks(cfg)["tracks"] == tracks_before
+    # той самий undo_id вдруге — 404 (вже використаний)
+    assert client.post("/api/tracks/undo", json={"undo_id": r["undo_id"]}).status_code == 404
+
+    r = client.delete("/api/tracks/4").get_json()
+    assert all(track_shape(cfg, s, 4) is None for s in FR)
+    client.post("/api/tracks/undo", json={"undo_id": r["undo_id"]})
+    assert {s: shapes_of(cfg, s) for s in FR} == before

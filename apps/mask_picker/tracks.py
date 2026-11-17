@@ -364,6 +364,62 @@ def sync_frame(cfg: Config, state: StateStore, stem: str, shapes: list) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Undo серверних операцій (split / merge / delete): знімок файлів до операції
+# ---------------------------------------------------------------------------
+# Зберігається в пам'яті сервера (як і undo-історія редактора — до перезапуску).
+# Фронт кладе undo_id у глобальну історію: Ctrl+Z → restore, Ctrl+Shift+Z →
+# повтор операції (новий undo_id).
+
+_UNDO: dict = {}
+_UNDO_ORDER: list = []
+_UNDO_CAP = 30
+
+
+def _snapshot(cfg: Config, state: StateStore, frames: list) -> str:
+    def _read(p: Path):
+        return p.read_text(encoding="utf-8") if p.exists() else None
+    snap = {
+        "tracks": _read(tracks_path(cfg)),
+        "frames": {s: {"polygons": _read(_polygons_path(cfg.polygons_dir, s)),
+                       "groups": _read(_groups_path(cfg.groups_dir, s)) if cfg.groups_dir else None,
+                       "state": state.get(s)} for s in frames},
+    }
+    uid = f"u{len(_UNDO_ORDER)}_{id(snap)}"
+    _UNDO[uid] = snap
+    _UNDO_ORDER.append(uid)
+    while len(_UNDO_ORDER) > _UNDO_CAP:
+        _UNDO.pop(_UNDO_ORDER.pop(0), None)
+    return uid
+
+
+def undo_op(cfg: Config, state: StateStore, uid: str) -> dict:
+    """Повернути файли/стан, зняті перед операцією uid."""
+    with _LOCK:
+        snap = _UNDO.pop(uid, None)
+        if snap is None:
+            raise KeyError("цю операцію вже не можна скасувати (сервер перезапускався?)")
+
+        def _write(p: Path, text):
+            if text is None:
+                if p.exists():
+                    p.unlink()
+            else:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                _atomic_write_json(p, json.loads(text))
+        _write(tracks_path(cfg), snap["tracks"])
+        for s, f in snap["frames"].items():
+            _write(_polygons_path(cfg.polygons_dir, s), f["polygons"])
+            if cfg.groups_dir:
+                _write(_groups_path(cfg.groups_dir, s), f["groups"])
+            if f["state"] is None:
+                if state.get(s) is not None:
+                    state.remove(s)
+            else:
+                state.set(s, f["state"])
+        return {"frames": sorted(snap["frames"])}
+
+
+# ---------------------------------------------------------------------------
 # Операції над треками (перезаписують і поточний кадр — фронт перезавантажує його)
 # ---------------------------------------------------------------------------
 
@@ -380,6 +436,7 @@ def split_track(cfg: Config, state: StateStore, tid: str, stem: str) -> dict:
         cur = shape_at(tr, frames, stem)
         if cur is None:
             raise ValueError("на цьому кадрі трека немає")
+        uid = _snapshot(cfg, state, frames)
         order = {s: i for i, s in enumerate(frames)}
         f = order[stem]
         new_id = str(data["next_id"])
@@ -392,7 +449,7 @@ def split_track(cfg: Config, state: StateStore, tid: str, stem: str) -> dict:
         save_tracks(cfg, data)
         rewritten = set(materialize(cfg, state, str(tid), tr, frames=frames))
         rewritten.update(materialize(cfg, state, new_id, data["tracks"][new_id], frames=frames))
-        return {"new_track_id": int(new_id), "frames": sorted(rewritten)}
+        return {"new_track_id": int(new_id), "frames": sorted(rewritten), "undo_id": uid}
 
 
 def merge_tracks(cfg: Config, state: StateStore, into: str, src: str) -> dict:
@@ -407,6 +464,7 @@ def merge_tracks(cfg: Config, state: StateStore, into: str, src: str) -> dict:
         if a["series"] != b["series"]:
             raise ValueError("треки з різних серій не можна злити")
         frames = series_frames(cfg, a["series"])
+        uid = _snapshot(cfg, state, frames)
         order = {s: i for i, s in enumerate(frames)}
         # Кадри, де видно src, стають ключовими для into (крім уже ключових into).
         for s in frames:
@@ -421,18 +479,20 @@ def merge_tracks(cfg: Config, state: StateStore, into: str, src: str) -> dict:
         save_tracks(cfg, data)
         rewritten = set(materialize(cfg, state, str(src), None, frames=frames))
         rewritten.update(materialize(cfg, state, str(into), a, frames=frames))
-        return {"frames": sorted(rewritten)}
+        return {"frames": sorted(rewritten), "undo_id": uid}
 
 
 def delete_track(cfg: Config, state: StateStore, tid: str) -> dict:
     with _LOCK:
         data = load_tracks(cfg)
-        tr = data["tracks"].pop(str(tid), None)
+        tr = data["tracks"].get(str(tid))
         if tr is None:
             raise KeyError(f"трек {tid} не знайдено")
-        save_tracks(cfg, data)
         frames = series_frames(cfg, tr["series"])
-        return {"frames": sorted(materialize(cfg, state, str(tid), None, frames=frames))}
+        uid = _snapshot(cfg, state, frames)
+        del data["tracks"][str(tid)]
+        save_tracks(cfg, data)
+        return {"frames": sorted(materialize(cfg, state, str(tid), None, frames=frames)), "undo_id": uid}
 
 
 # ---------------------------------------------------------------------------

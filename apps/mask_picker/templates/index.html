@@ -232,51 +232,60 @@
     <div class="modal__content">
       <button class="modal__close" data-close>×</button>
       <h2>Гарячі клавіші</h2>
+      <p class="muted">Повний список з поясненнями — файл <b>docs/HOTKEYS.md</b> у папці проєкту.</p>
+      <h3 style="margin-top:12px;">Головний екран</h3>
       <table class="shortcuts">
-        <tr><td><kbd>1</kbd>…<kbd>9</kbd></td><td>Обрати варіант №N</td></tr>
-        <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Попереднє / Наступне фото</td></tr>
+        <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Попереднє / наступне фото</td></tr>
+        <tr><td><kbd>1</kbd>…<kbd>9</kbd></td><td>Обрати варіант маски №N</td></tr>
         <tr><td><kbd>S</kbd> або <kbd>Space</kbd></td><td>Пропустити фото</td></tr>
-        <tr><td><kbd>U</kbd></td><td>Скинути рішення по поточному фото</td></tr>
-        <tr><td><kbd>C</kbd></td><td>Відкрити Cleanup (чистка інстансів обраної маски)</td></tr>
+        <tr><td><kbd>Shift</kbd>+<kbd>U</kbd></td><td>Скинути все по фото (Hard Reset)</td></tr>
+        <tr><td><kbd>C</kbd> / <kbd>P</kbd></td><td>Відкрити редактор: Cleanup / Polygons</td></tr>
         <tr><td><kbd>Z</kbd></td><td>Порівняти всі варіанти у великому вікні</td></tr>
-        <tr><td><kbd>O</kbd> (утримати)</td><td>Показати оригінал на місці <b>всіх</b> варіантів одночасно — швидке порівняння (працює й у zoom-вікні)</td></tr>
-        <tr><td><kbd>?</kbd></td><td>Ця довідка</td></tr>
+        <tr><td><kbd>O</kbd> (тримати)</td><td>Показати оригінал замість варіантів</td></tr>
+        <tr><td><kbd>?</kbd> / <kbd>Esc</kbd></td><td>Ця довідка / закрити вікно</td></tr>
       </table>
-      <p class="muted">
-        Натиснувши <b>1</b>, <b>2</b> тощо — миттєво фіксуєш вибір і переходиш до наступного
-        фото. Решта варіантів маски <b>залишаються на місці</b> (для статистики).
-      </p>
-      <h3 style="margin-top:16px;">У режимі Cleanup</h3>
+      <h3 style="margin-top:16px;">Редактор — усі вкладки</h3>
       <table class="shortcuts">
-        <tr><td><kbd>ЛКМ</kbd> по інстансу</td><td>Reject-режим: позначити як "викинути" / повернути</td></tr>
-        <tr><td><kbd>R</kbd> / <kbd>M</kbd></td><td>Reject-інструмент / Marker-інструмент (📍 "тут треба дорозмітити")</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Redo</td></tr>
-        <tr><td><kbd>Enter</kbd></td><td>Зберегти і закрити</td></tr>
-        <tr><td><kbd>Esc</kbd></td><td>Закрити без збереження (поточний батч буде втрачено)</td></tr>
-        <tr><td><kbd>O</kbd> (утримати)</td><td>Показати оригінал як фон поки затиснуто (відпустив — повертається overlay)</td></tr>
-        <tr><td>Колесо миші</td><td>Зум (курсор = центр)</td></tr>
-        <tr><td>ПКМ / СКМ / <kbd>Space</kbd>+drag</td><td>Панорама</td></tr>
-        <tr><td><kbd>0</kbd></td><td>Скинути зум до 100%</td></tr>
-        <tr><td><kbd>Tab</kbd></td><td>Перемкнути таб Cleanup ⇄ Polygons</td></tr>
+        <tr><td>◀ / ▶, <kbd>PageUp</kbd> / <kbd>PageDown</kbd></td><td>Зберегти й відкрити попереднє / наступне фото</td></tr>
+        <tr><td><kbd>Tab</kbd></td><td>Наступна вкладка (Cleanup → Polygons → Groups)</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Скасувати (і операції з треками: розділити / злити / видалити)</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Повторити</td></tr>
+        <tr><td>Колесо / <kbd>0</kbd></td><td>Наближення / масштаб 100%</td></tr>
+        <tr><td><kbd>Space</kbd>+drag, ПКМ / СКМ</td><td>Пересунути зображення</td></tr>
+        <tr><td><kbd>O</kbd> (тримати)</td><td>Оригінал без розмітки</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>Зняти виділення / скасувати; якщо нічого — зберегти й закрити</td></tr>
+        <tr><td>×</td><td>Зберегти й закрити</td></tr>
       </table>
-      <h3 style="margin-top:16px;">У режимі Polygons (Stage C)</h3>
+      <h3 style="margin-top:16px;">Cleanup</h3>
       <table class="shortcuts">
-        <tr><td><kbd>1</kbd>…<kbd>9</kbd></td><td>Перемкнути активний клас (лейбл) для нових полігонів</td></tr>
-        <tr><td><kbd>D</kbd> / <kbd>E</kbd></td><td>Інструмент: Draw / Edit</td></tr>
-        <tr><td><kbd>ЛКМ</kbd> (Draw)</td><td>Поставити вершину. Перший клік починає новий полігон.</td></tr>
-        <tr><td><kbd>Shift</kbd>+drag (Draw)</td><td>Freehand — вершини ставляться автоматично з інтервалом</td></tr>
-        <tr><td><kbd>Enter</kbd> / dblclick (Draw)</td><td>Замкнути полігон</td></tr>
-        <tr><td><kbd>Esc</kbd> (Draw)</td><td>Скасувати поточний полігон</td></tr>
-        <tr><td><kbd>Backspace</kbd> (Draw)</td><td>Прибрати останню вершину</td></tr>
-        <tr><td><kbd>ЛКМ</kbd> drag (Edit)</td><td>Перетягнути вершину; по порожньому — lasso multi-select (Shift додати, Alt відняти)</td></tr>
-        <tr><td><kbd>Shift</kbd>+<kbd>ЛКМ</kbd> (Edit)</td><td>Додати/прибрати вершину з вибору</td></tr>
-        <tr><td>dblclick на ребрі (Edit)</td><td>Вставити вершину</td></tr>
-        <tr><td><kbd>Alt</kbd>+<kbd>ЛКМ</kbd> по вершині</td><td>Видалити вершину</td></tr>
-        <tr><td><kbd>Delete</kbd></td><td>Видалити вибрані вершини; якщо полігон виділено повністю — весь полігон</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Undo / Redo</td></tr>
-        <tr><td><kbd>Enter</kbd> (Edit)</td><td>Зберегти і закрити</td></tr>
-        <tr><td><kbd>Esc</kbd></td><td>Зняти вибір / закрити модалку</td></tr>
+        <tr><td><kbd>ЛКМ</kbd> по клітині</td><td>Викинути / повернути</td></tr>
+        <tr><td><kbd>R</kbd> / <kbd>M</kbd></td><td>Reject / Marker (📍 «тут дорозмітити»)</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Зберегти й закрити</td></tr>
+      </table>
+      <h3 style="margin-top:16px;">Polygons</h3>
+      <table class="shortcuts">
+        <tr><td><kbd>E</kbd> / <kbd>D</kbd> / <kbd>P</kbd> / <kbd>B</kbd></td><td>Редагування / ✏️ Draw / 🎯 Pick (з тіні або з маски) / ✂ Розрив</td></tr>
+        <tr><td><kbd>1</kbd>…<kbd>9</kbd></td><td>Клас для нових полігонів</td></tr>
+        <tr><td><kbd>S</kbd> / <kbd>Shift</kbd>+<kbd>S</kbd></td><td>Seed all / Multi-seed з масок моделей</td></tr>
+        <tr><td>Draw: клік, <kbd>Shift</kbd>+рух</td><td>Точка / точки самі (freehand)</td></tr>
+        <tr><td>Draw: <kbd>Enter</kbd>, dblclick / <kbd>Backspace</kbd> / <kbd>Esc</kbd></td><td>Замкнути / прибрати точку / скасувати</td></tr>
+        <tr><td>Тягнути точку / всередині полігона</td><td>Пересунути точку / весь полігон</td></tr>
+        <tr><td>Тягнути по порожньому</td><td>Ласо по точках (<kbd>Shift</kbd> додати, <kbd>Alt</kbd> відняти); тягнути в рамці — пересунути</td></tr>
+        <tr><td><kbd>←↑→↓</kbd> (<kbd>Shift</kbd> ×10)</td><td>Зсунути вибрані точки / полігон</td></tr>
+        <tr><td>dblclick по лінії / <kbd>Alt</kbd>+клік по точці</td><td>Додати / видалити точку</td></tr>
+        <tr><td><kbd>Delete</kbd></td><td>Видалити вибрані точки / полігон</td></tr>
+        <tr><td>✂ Розрив</td><td>Клік по лінії — розрив; <kbd>Shift</kbd>+клік — інший шматок; <kbd>Delete</kbd> — видалити шматок; клік по кінцю — домальовувати; <kbd>Enter</kbd> — замкнути; <kbd>Esc</kbd> — вийти</td></tr>
+        <tr><td>👻◀ / ▶👻</td><td>Тінь попереднього / наступного фото; <kbd>P</kbd>+клік по тіні — скопіювати</td></tr>
+        <tr><td>🎞 Трек / 📎 До треку…</td><td>Зробити полігон треком / зробити його формою наявного треку (номер лишається)</td></tr>
+        <tr><td>⛔ / ✂ / 🔗 / 🗑 Трек</td><td>Outside на кадрі / розділити / злити / прибрати трек</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Зберегти й закрити</td></tr>
+      </table>
+      <h3 style="margin-top:16px;">Groups</h3>
+      <table class="shortcuts">
+        <tr><td><kbd>A</kbd> / <kbd>G</kbd></td><td>Edit (клік — додати / прибрати, тягнути — ласо) / Group Picker</td></tr>
+        <tr><td><kbd>N</kbd> / <kbd>Delete</kbd></td><td>Нова група / видалити групу</td></tr>
+        <tr><td><kbd>I</kbd> (тримати)</td><td>Клітини поза групами</td></tr>
+        <tr><td><kbd>Enter</kbd></td><td>Зберегти</td></tr>
       </table>
     </div>
   </div>
@@ -503,6 +512,7 @@
         <button id="polyDeleteShape" class="btn btn--ghost" title="Видалити вибраний полігон (Delete)" disabled>🗑 Shape</button>
         <!-- Треки (tracks.js): видно лише доречні кнопки для обраного полігона -->
         <button id="trackCreate" class="btn btn--ghost" style="display:none" title="Зробити обраний полігон треком: та сама клітина на наступних кадрах серії з одним номером. Виправлення форми на іншому кадрі = ключовий кадр, проміжні підлаштуються (інтерполяція)">🎞 Трек</button>
+        <button id="trackAssign" class="btn btn--ghost" style="display:none" title="Зробити обраний полігон формою НАЯВНОГО треку на цьому кадрі (номер треку лишається, стара форма тут прибирається). Напр. щоб повністю перемалювати клітину на одному кадрі">📎 До треку…</button>
         <span id="trackSelected" class="muted" style="display:none"></span>
         <button id="trackOutside" class="btn btn--ghost" style="display:none" title="Клітина зникла: трек закінчується на цьому кадрі (те саме, що видалити його полігон тут)">⛔ Outside</button>
         <button id="trackSplit" class="btn btn--ghost" style="display:none" title="Розділити трек: від цього кадру — новий номер (напр. поділ клітини)">✂ Розділити</button>

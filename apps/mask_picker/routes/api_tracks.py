@@ -6,6 +6,7 @@
   POST   /api/tracks/<tid>/split        — {stem}: від цього кадру — новий трек
   POST   /api/tracks/<tid>/merge        — {from}: влити трек `from` у <tid>
   DELETE /api/tracks/<tid>              — видалити трек з усіх кадрів
+  POST   /api/tracks/undo               — {undo_id}: скасувати split/merge/delete (Ctrl+Z)
 
 Синхронізація ключових кадрів — автоматично в POST /api/polygons/<stem>.
 Відповіді операцій містять `frames` (перезаписані кадри) і `states` (їх стан
@@ -62,6 +63,11 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
     def api_tracks_merge(tid: str):
         src = str((request.get_json(silent=True) or {}).get("from") or "")
         return _run(T.merge_tracks, cfg, state, tid, src)
+
+    @bp.route("/api/tracks/undo", methods=["POST"])
+    def api_tracks_undo():
+        uid = str((request.get_json(silent=True) or {}).get("undo_id") or "")
+        return _run(T.undo_op, cfg, state, uid)
 
     @bp.route("/api/tracks/<tid>", methods=["DELETE"])
     def api_tracks_delete(tid: str):

@@ -9,6 +9,7 @@ Cryobiology V / **Mask Picker**: human-in-the-loop пайплайн доразм
 - `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md` + `17_TRACKS.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
 - `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-019), відкриті пункти — там.
 - `docs/CODE_AUDIT_PRINCIPLES.md` — **обовʼязково перед правками** (див. нижче).
+- `docs/HOTKEYS.md` — усі гарячі клавіші й кнопки для користувача (дзеркало — `#helpModal` в `index.html`; міняєш клавіші — онови обидва).
 - `docs/TECHNICAL_REPORT.md`, `docs/PROJECT_JOURNEY.md` — історія й рішення.
 
 ## Структура
@@ -30,7 +31,7 @@ python apps/segmentation/run_segmentation.py --data-dir data/<dataset>   # кр�
 python apps/mask_picker/app.py --workspace data/<dataset>                # крок 2 → http://127.0.0.1:5000
 python tools/launchers/bake_all.py --data-dir data/<dataset> --pack      # deliverable
 python tools/make_sandbox.py                                             # безпечна копія датасету для експериментів
-cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 253 passed)
+cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 254 passed)
 ```
 
 ### Docker (основний спосіб запуску для користувача)
@@ -75,7 +76,8 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   стрілки; тягнути весь полігон за тіло (`06`) → експорт «📷 Додати фото» (`16`§7) → тінь сусідніх фото
   (onion skin, `ghost.js`, `06`§11; копіювання з тіні — у 🎯 Pick) + чіткість ліній/точок при зумі (`06`§12)
   → треки між кадрами серії як у CVAT (`17_TRACKS.md`) → ◀/▶ між фото в шапці редактора (`editor.gotoPhoto`,
-  PageUp/PageDown) + фікс F-019 (× закривав без збереження, Esc не закривав — з оригінальної версії). exe-лаунчер — НЕ робити (рішення: лишається Docker + ярлик). Інструкція для людей по ручному режиму й карта збереження
+  PageUp/PageDown) + фікс F-019 (× закривав без збереження, Esc не закривав — з оригінальної версії) → фіксоване місце ◀/▶,
+  «📎 До треку…», Ctrl+Z для split/merge/delete треку (серверні знімки), `docs/HOTKEYS.md` (+ довідка «?» в програмі). exe-лаунчер — НЕ робити (рішення: лишається Docker + ярлик). Інструкція для людей по ручному режиму й карта збереження
   даних — `README.md` §«Ручна розмітка». Відкриті ідеї: імпорт зовнішніх форматів розмітки (COCO/CVAT),
   native-діалоги вибору папки в Docker (`15`§6), попередження при bake про клас поза labels.json (F-016).
 - Хмарна сесія Claude Code не запускає код з репо без дозволу (класифікатор безпеки) — попросити дозвіл, якщо треба.

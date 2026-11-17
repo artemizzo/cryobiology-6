@@ -14,8 +14,12 @@
  *   ✂ Розділити — від цього кадру — новий номер треку
  *   🔗 Злити…    — влити інший трек (номер) у цей
  *   🗑 Трек      — видалити трек з усіх кадрів серії
+ *   📎 До треку… — обраний звичайний полігон стає формою НАЯВНОГО треку на цьому
+ *                  кадрі (номер лишається; стара форма треку тут прибирається)
  * Розділення / злиття / видалення перезаписують і поточний кадр на сервері →
- * кадр перечитується, історія undo очищується (вона була б неузгоджена).
+ * кадр перечитується; сервер знімає знімок файлів до операції (undo_id), і
+ * операція лягає в глобальну історію: Ctrl+Z → /api/tracks/undo, Ctrl+Shift+Z →
+ * повтор операції.
  */
 
 import { $, showToast } from "../util.js";
@@ -38,6 +42,7 @@ export const tracksMixin = {
     const cur = this.state.polygons.tool === null ? this._trackOfSelected() : null;
     const show = (id, on) => { const b = $(id); if (b) b.style.display = on ? "" : "none"; };
     show("#trackCreate", !!cur && cur.tid === null);
+    show("#trackAssign", !!cur && cur.tid === null);
     for (const id of ["#trackOutside", "#trackSplit", "#trackMerge", "#trackDelete"]) {
       show(id, !!cur && cur.tid !== null);
     }
@@ -91,26 +96,98 @@ export const tracksMixin = {
     showToast(`⛔ Трек #${cur.tid} закінчується на цьому кадрі (Ctrl+Z — повернути)`, "ok", 3500);
   },
 
-  // Операція, що перезаписує й поточний кадр: зберегти → виконати → перечитати.
+  // Операція, що перезаписує й поточний кадр: зберегти → виконати → перечитати
+  // кадр → покласти в історію (Ctrl+Z скасує її на сервері).
   async _trackServerOp(url, method, body, verb) {
     try {
-      if (this.state.polygons.dirty) await this._polySave(true);
-      const r = await api(url, { method, body: body ? JSON.stringify(body) : undefined });
-      this._tracksApplyServerResult(r, verb);
-      await this._loadPolygons();
-      this._historyClear();
-      const pg = this.state.polygons;
-      pg.selectedShape = -1;
-      pg.selectedVertices.clear();
-      pg.dirty = false;
-      this._polyUpdateButtons();
-      this._polyRedraw();
-      this._ghostOnOpen();                 // сусідні кадри теж могли змінитись
+      const r = await this._trackRunOp(url, method, body, verb);
+      const h = this._historyEnsure();
+      h.undo.push({ snaps: {}, primary: "polygons", trackop: { url, method, body, verb, undo_id: r.undo_id } });
+      h.redo.length = 0;
+      this._historyUpdateButtons();
       return r;
     } catch (e) {
       showToast(`Трек: ${e.message || e}`, "err", 5000);
       return null;
     }
+  },
+
+  async _trackRunOp(url, method, body, verb) {
+    if (this.state.polygons.dirty) await this._polySave(true);
+    const r = await api(url, { method, body: body ? JSON.stringify(body) : undefined });
+    this._tracksApplyServerResult(r, verb);
+    await this._trackReloadFrame();
+    return r;
+  },
+
+  // Перечитати полігони й групи кадру після зміни на сервері (без зміни історії).
+  async _trackReloadFrame() {
+    await this._loadPolygons();
+    await this._groupsLoad();
+    const pg = this.state.polygons;
+    pg.selectedShape = -1;
+    pg.selectedVertices.clear();
+    pg.dirty = false;
+    this._polyUpdateButtons();
+    this._polyRedraw();
+    this._ghostOnOpen();                   // сусідні кадри теж могли змінитись
+  },
+
+  // Ctrl+Z по серверній операції (history.js): повернути файли до операції.
+  async _trackOpUndo(op) {
+    try {
+      if (this.state.polygons.dirty) await this._polySave(true);
+      const r = await api("/api/tracks/undo", { method: "POST", body: JSON.stringify({ undo_id: op.undo_id }) });
+      this._tracksApplyServerResult(r, false);
+      await this._trackReloadFrame();
+      showToast(`↶ Скасовано: ${op.verb || "операцію з треком"}`, "ok", 2500);
+    } catch (e) {
+      showToast(`Скасувати не вдалося: ${e.message || e}`, "err", 5000);
+    }
+  },
+
+  // Ctrl+Shift+Z: повторити операцію (новий знімок → новий undo_id).
+  async _trackOpRedo(op) {
+    try {
+      const r = await this._trackRunOp(op.url, op.method, op.body, op.verb);
+      this._historyEnsure().undo.push({ snaps: {}, primary: "polygons", trackop: { ...op, undo_id: r.undo_id } });
+      this._historyUpdateButtons();
+    } catch (e) {
+      showToast(`Повторити не вдалося: ${e.message || e}`, "err", 5000);
+    }
+  },
+
+  // Обраний звичайний полігон → форма наявного треку на цьому кадрі.
+  async _trackAssign() {
+    const cur = this._trackOfSelected();
+    if (!cur || cur.tid !== null) return;
+    const m = /^(.*?)(\d+)$/.exec(this.state.stem);
+    const series = m ? m[1] : this.state.stem;
+    let list = [];
+    try { list = ((await api("/api/tracks")).tracks || []).filter((t) => t.series === series); } catch (_) {}
+    const hint = list.length
+      ? list.map((t) => `#${t.id} (${t.label}, ${t.first || "—"} … ${t.last || "—"})`).join("\n")
+      : "(у цій серії ще нема треків)";
+    const ans = prompt("Зробити обраний полігон формою треку на цьому кадрі (номер лишається).\n" +
+      `Номер треку:\n${hint}`, "");
+    if (ans === null) return;
+    const tid = parseInt(String(ans).replace("#", "").trim(), 10);
+    if (!list.some((t) => t.id === tid)) { showToast(`Треку #${ans} у цій серії нема`, "err", 3000); return; }
+    const pg = this.state.polygons;
+    this._polyPushUndoSnapshot();
+    const shape = pg.shapes[pg.selectedShape];
+    shape.flags = { ...(shape.flags || {}), track_id: tid, keyframe: true };
+    const old = pg.shapes.findIndex((sh, i) => sh !== shape && Number((sh.flags || {}).track_id) === tid);
+    if (old >= 0) {
+      pg.shapes.splice(old, 1);
+      this._polyRemapGroupsAfterShapeDelete([old]);   // groups-snap у той самий undo-запис
+    }
+    pg.selectedShape = pg.shapes.indexOf(shape);
+    this._polyMarkDirty();
+    this._polyUpdateButtons();
+    this._polyRedraw();
+    await this._polySave(true);
+    showToast(`📎 Полігон тепер — трек #${tid} на цьому кадрі` + (old >= 0 ? " (стару форму прибрано)" : ""), "ok", 3500);
   },
 
   async _trackSplit() {
