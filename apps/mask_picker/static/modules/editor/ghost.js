@@ -5,7 +5,7 @@
  * наступного фото за списком (state.catalog, без виключених) напівпрозорим
  * пунктиром: попереднє — рожеве, наступне — зелене (як onion skin в анімації).
  * Тінь — лише для огляду: не входить у pg.shapes, не зберігається, клікам не
- * заважає. Інструмент "ghost" («📋 З тіні», клавіша G): клік усередині
+ * заважає. Інструмент 🎯 Pick (P, або G): клік усередині
  * полігона-тіні копіює його в поточну розмітку (той самий клас; невідомий у
  * labels.json → перший клас, як у _loadPolygons). Одна дія = один undo.
  *
@@ -107,10 +107,8 @@ export const ghostMixin = {
       } else {
         showToast(`Тінь ${GHOST_TITLES[side]} фото (${stem}): ${g.shapes.length} полігонів` +
           (g.scaled ? " — інший розмір фото, масштабовано" : "") +
-          ". Скопіювати — «📋 З тіні» (G)", "ok", 3500);
+          ". Скопіювати — 🎯 Pick (P) і клік по тіні", "ok", 3500);
       }
-    } else if (!pg.ghost.showPrev && !pg.ghost.showNext && pg.tool === "ghost") {
-      this._setPolyTool(null);
     }
     this._ghostRedraw();
   },
@@ -170,17 +168,6 @@ export const ghostMixin = {
     showToast(`📋 Скопійовано з ${GHOST_TITLES[hit.side]} фото (${label})`, "ok", 1800);
   },
 
-  _ghostMouseDown(e, pt) {
-    e.preventDefault();
-    if (!this._ghostSides().length) {
-      showToast("Спершу увімкни тінь: «◀ Попереднє» або «Наступне ▶»", "err", 2500);
-      return;
-    }
-    const hit = this._ghostHit(pt);
-    if (hit) this._ghostCopy(hit);
-    else showToast("Клікни всередині полігона-тіні", "warn", 1500);
-  },
-
   _ghostMouseMove(pt) {
     const g = this.state.polygons.ghost;
     if (!g) return;
@@ -197,7 +184,7 @@ export const ghostMixin = {
     layer.innerHTML = "";
     const pg = this.state.polygons;
     if (this.state.activeTab !== "polygons" || !pg.ghost) return;
-    const hover = pg.tool === "ghost" ? pg.ghost.hover : null;
+    const hover = pg.tool === "pick" ? pg.ghost.hover : null;
     for (const side of this._ghostSides()) {
       const color = GHOST_COLORS[side];
       pg.ghost[side].shapes.forEach((sh, idx) => {

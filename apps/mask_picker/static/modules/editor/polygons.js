@@ -49,7 +49,7 @@ export const polygonsMixin = {
     // null = default "navigate + edit": click a polygon/vertex/edge to edit it,
     // click empty does nothing. Edit is no longer a separate button — it is
     // simply the state when no tool is on.
-    if (tool !== "draw" && tool !== "pick" && tool !== "break" && tool !== "ghost" && tool !== null) return;
+    if (tool !== "draw" && tool !== "pick" && tool !== "break" && tool !== null) return;
     const pg = this.state.polygons;
     // Toggle off: clicking the already-active tool (or its hotkey) -> default.
     if (tool !== null && pg.tool === tool) tool = null;
@@ -91,11 +91,6 @@ export const polygonsMixin = {
     // Розрив полігона: увесь ввід — у сеанс ремонту (repair.js).
     if (pg.tool === "break" || pg.repair) {
       this._repairMouseDown(e, pt);
-      return;
-    }
-    // «📋 З тіні»: клік по полігону-тіні сусіднього фото → копія (ghost.js).
-    if (pg.tool === "ghost") {
-      this._ghostMouseDown(e, pt);
       return;
     }
 
@@ -154,6 +149,11 @@ export const polygonsMixin = {
     }
 
     if (pg.tool === "pick") {
+      // Тінь сусіднього фото (ghost.js) — ПЕРШОЮ: копія лягає точно на тінь, тож
+      // повторний клік інакше влучав би у власний полігон і вимикав Pick. Уже
+      // скопійована тінь → лише повідомлення, Pick лишається активним.
+      const ghostHit = this._ghostSides().length ? this._ghostHit(pt) : null;
+      if (ghostHit) { e.preventDefault(); this._ghostCopy(ghostHit); return; }
       // QA-2c: якщо клікнули на ВЖЕ існуючий polygon-shape — авто-перемикаємось
       // на Edit і обираємо його.
       const hitShape = this._polyHitShape(pt);
@@ -167,6 +167,14 @@ export const polygonsMixin = {
         return;
       }
       e.preventDefault();
+      if (this.state.model === MANUAL_MODEL) {
+        // Маска ручного режиму порожня — брати можна лише з тіні.
+        showToast(this._ghostSides().length
+          ? "Клікни всередині полігона-тіні"
+          : "Ручна розмітка: маски нема. Увімкни тінь «◀ Попереднє» / «Наступне ▶», щоб брати полігони з сусідніх фото",
+          "warn", 3000);
+        return;
+      }
       this._polyPickSeed(pt);
       return;
     }
@@ -253,10 +261,6 @@ export const polygonsMixin = {
       this._repairMouseMove(e, pt);
       return;
     }
-    if (pg.tool === "ghost") {
-      this._ghostMouseMove(pt);
-      return;
-    }
 
     if (pg.tool === "draw") {
       // edit-in-draw: drag a vertex grabbed in Draw (mirror edit-mode drag).
@@ -281,7 +285,10 @@ export const polygonsMixin = {
       this._polyRedrawDraft();
       return;
     }
-    if (pg.tool === "pick") return;
+    if (pg.tool === "pick") {
+      this._ghostMouseMove(pt);   // підсвітити полігон-тінь під курсором
+      return;
+    }
 
     // edit
     if (pg.draggingVertex) {
@@ -350,7 +357,7 @@ export const polygonsMixin = {
     }
     if (this.state.activeTab !== "polygons") return;
     const pg = this.state.polygons;
-    if (pg.tool === "break" || pg.repair || pg.tool === "ghost") return;
+    if (pg.tool === "break" || pg.repair) return;
 
     if (pg.tool === "draw" || pg.tool === "pick") {
       // edit-in-draw: finish a vertex drag started in Draw. Undo вже запушено
@@ -441,7 +448,7 @@ export const polygonsMixin = {
     const now = performance.now();
     if (now - (pg._dblHandledT || 0) < DBL_CLICK_MS) return;
     pg._dblHandledT = now;
-    if (pg.tool === "break" || pg.repair || pg.tool === "ghost") return;
+    if (pg.tool === "break" || pg.repair) return;
 
     if (pg.tool === "draw" && pg.draft) {   // mid-draft: dblclick closes polygon
       if (pg.draft.points.length >= 3) {

@@ -182,16 +182,13 @@ export const tabsMixin = {
             `<kbd>Shift</kbd>+клік — обрати фрагмент, <kbd>Delete</kbd> — видалити його. ` +
             `Клік по кінцю (біле коло) — домальовувати. <kbd>Enter</kbd> — замкнути. ` +
             `<kbd>Ctrl+Z</kbd> — крок назад, <kbd>Esc</kbd> — скасувати розрив.`;
-      } else if (this.state.polygons.tool === "ghost") {
-        hint.innerHTML = `📋 <b>З тіні</b>: клік усередині полігона-тіні (рожевий — попереднє фото, ` +
-          `зелений — наступне) копіює його в поточну розмітку. <kbd>Ctrl+Z</kbd> — скасувати. ` +
-          `<kbd>G</kbd>/<kbd>E</kbd> — вийти.`;
       } else if (this.state.polygons.tool === "break") {
         hint.innerHTML = `✂ <b>Розрив</b>: клік по ребру (з'являться дві точки-кінці) або по точці ` +
           `полігона — розірвати контур у цьому місці. <kbd>B</kbd>/<kbd>E</kbd> — вийти.`;
       } else if (this.state.polygons.tool === "pick") {
-        hint.innerHTML = `🎯 <b>Pick</b>: клік по клітині на масці → seed тільки цього інстанса. ` +
-          `Rejected не беруться. <kbd>D</kbd> — до draw, <kbd>E</kbd> — до edit.`;
+        hint.innerHTML = `🎯 <b>Pick</b>: клік по полігону-тіні сусіднього фото (рожевий / зелений) — ` +
+          `скопіювати його; клік по клітині на масці — взяти її контур (rejected не беруться). ` +
+          `<kbd>Ctrl+Z</kbd> — скасувати. <kbd>D</kbd> — до draw, <kbd>E</kbd> — до edit.`;
       } else {
         hint.innerHTML = `✋ <b>Edit</b>: drag = перенести вершину; drag усередині полігона = пересунути весь полігон. ` +
           `dblclick на ребрі = вставити вершину. ` +
