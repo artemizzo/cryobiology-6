@@ -33,6 +33,7 @@ from state import (
     cv2,
     np,
 )
+import tracks as tracks_mod
 from cleanup import _find_npy_for
 from polygons import (
     POLYGON_BACKUP_KEEP,
@@ -105,11 +106,22 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         # Day 7 lazy-bake: чистий save polygons JSON НЕ запікає у selected/.
         # Позначаємо stem dirty — bake відбудеться через Save All / Finalize.
         state.mark_dirty(stem)
+        # Треки (tracks.py): змінені/нові/зниклі полігони з track_id → ключові
+        # кадри; інші кадри серії перематеріалізуються.
+        try:
+            tr = tracks_mod.sync_frame(cfg, state, stem, body.get("shapes") or [])
+            tr["states"] = {s: state.get(s) for s in tr["frames"]}
+            if tr["frames"]:
+                catalog.invalidate()
+        except Exception as e:
+            traceback.print_exc()
+            tr = {"error": f"tracks sync failed: {e}"}
         return jsonify({
             "ok": True,
             "shape_count": len(body.get("shapes") or []),
             "path": str(_polygons_path(cfg.polygons_dir, stem)),
             "dirty": state.is_dirty(stem),
+            "tracks": tr,
         })
 
     @bp.route("/api/polygons-export/<stem>", methods=["POST"])

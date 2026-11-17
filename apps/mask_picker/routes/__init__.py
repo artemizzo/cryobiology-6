@@ -23,6 +23,7 @@ from . import (
     api_misc,
     api_polygons,
     api_state,
+    api_tracks,
     api_workspace,
 )
 
@@ -38,4 +39,5 @@ def register_all(app: Flask, cfg: Config, state: StateStore,
     app.register_blueprint(api_polygons.make_blueprint(cfg, state, catalog))
     app.register_blueprint(api_groups.make_blueprint(cfg, state, catalog))
     app.register_blueprint(api_group_classes.make_blueprint(cfg, state, catalog))
+    app.register_blueprint(api_tracks.make_blueprint(cfg, state, catalog))
     app.register_blueprint(api_workspace.make_blueprint(cfg, state, catalog))

@@ -56,6 +56,7 @@ import { keysMixin } from "./keys.js";
 import { historyMixin } from "./history.js";
 import { repairMixin } from "./repair.js";
 import { ghostMixin } from "./ghost.js";
+import { tracksMixin } from "./tracks.js";
 
 export const editor = {
   state: {
@@ -203,6 +204,7 @@ export const editor = {
   ...historyMixin,
   ...repairMixin,
   ...ghostMixin,
+  ...tracksMixin,
 
   // =================================================================
   //                              OPEN / CLOSE

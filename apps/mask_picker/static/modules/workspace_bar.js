@@ -462,8 +462,9 @@ async function _applyImportMerge() {
       const added = resp.labels_added || [];
       showToast(
         `✓ Імпортовано ${resp.merged_count} фото (${resp.files_copied} файлів)` +
-        (added.length ? ` · нові класи: ${added.join(", ")}` : ""),
-        "ok", 5000,
+        (added.length ? ` · нові класи: ${added.join(", ")}` : "") +
+        (resp.tracks_kept_local ? " · ⚠ треки з архіву НЕ імпортовано: у датасеті вже є свої (tracks.json)" : ""),
+        resp.tracks_kept_local ? "warn" : "ok", resp.tracks_kept_local ? 8000 : 5000,
       );
       if (added.length) {
         // Класи з архіву дописано у labels.json — оновити список класів у UI.

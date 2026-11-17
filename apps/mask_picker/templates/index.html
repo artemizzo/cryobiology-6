@@ -496,6 +496,13 @@
         <button id="polySeed" class="btn btn--ghost" title="Seed all (S): завантажити контури з УСІЄЇ обраної маски">📐 Seed all</button>
         <button id="polyAlign" class="btn btn--ghost" title="Вирівняти вибрані вершини по лінії (2 опорні + інші)" disabled>📏 Align</button>
         <button id="polyDeleteShape" class="btn btn--ghost" title="Видалити вибраний полігон (Delete)" disabled>🗑 Shape</button>
+        <!-- Треки (tracks.js): видно лише доречні кнопки для обраного полігона -->
+        <button id="trackCreate" class="btn btn--ghost" style="display:none" title="Зробити обраний полігон треком: та сама клітина на наступних кадрах серії з одним номером. Виправлення форми на іншому кадрі = ключовий кадр, проміжні підлаштуються (інтерполяція)">🎞 Трек</button>
+        <span id="trackSelected" class="muted" style="display:none"></span>
+        <button id="trackOutside" class="btn btn--ghost" style="display:none" title="Клітина зникла: трек закінчується на цьому кадрі (те саме, що видалити його полігон тут)">⛔ Outside</button>
+        <button id="trackSplit" class="btn btn--ghost" style="display:none" title="Розділити трек: від цього кадру — новий номер (напр. поділ клітини)">✂ Розділити</button>
+        <button id="trackMerge" class="btn btn--ghost" style="display:none" title="Злити інший трек цієї серії в цей (одна клітина отримала два номери)">🔗 Злити…</button>
+        <button id="trackDelete" class="btn btn--ghost" style="display:none" title="Видалити трек з усіх кадрів серії">🗑 Трек</button>
         <button id="polySave" class="btn btn--primary editor__save" title="Зберегти полігони + запекти в маску (Enter)">💾 Save Polygons</button>
       </div>
 

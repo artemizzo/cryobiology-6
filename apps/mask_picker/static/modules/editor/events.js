@@ -99,6 +99,11 @@ export const eventsMixin = {
     $("#polyRepairClose").onclick = () => this._repairCommit();
     $("#polyGhostPrev").onclick = () => this._ghostToggle("prev");
     $("#polyGhostNext").onclick = () => this._ghostToggle("next");
+    $("#trackCreate").onclick = () => this._trackCreate();
+    $("#trackOutside").onclick = () => this._trackOutside();
+    $("#trackSplit").onclick = () => this._trackSplit();
+    $("#trackMerge").onclick = () => this._trackMerge();
+    $("#trackDelete").onclick = () => this._trackDelete();
     $("#polyZoomReset").onclick = () => this.resetZoom();
     // Day 3c′: base label set+persist перенесено у labels.js _buildBaseChipDropdown handler.
     this._toolbarPolygons().querySelectorAll("[data-poly-bg]").forEach((btn) => {

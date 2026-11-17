@@ -273,6 +273,16 @@ def _merge_workspace_meta(src_root: Path, cfg: Config) -> dict:
                 _save_label_classes(cfg.labels_file, imported)
             if added:
                 out["labels_added"] = [c.get("name") for c in added]
+    # Треки (tracks.py): локальних нема → копія; є й відрізняються → лишаємо свої
+    # (злиття номерів треків між датасетами не підтримується) і попереджаємо.
+    src_tr = next(src_root.rglob("tracks.json"), None)
+    if src_tr is not None:
+        dst_tr = cfg.selected_dir.parent / "tracks.json"
+        if not dst_tr.exists():
+            shutil.copy2(src_tr, dst_tr)
+            out["tracks_copied"] = True
+        elif dst_tr.read_bytes() != src_tr.read_bytes():
+            out["tracks_kept_local"] = True
     src_gc = next(src_root.rglob("group_classes.json"), None)
     if (src_gc is not None and cfg.group_classes_file
             and not cfg.group_classes_file.exists()):
@@ -529,7 +539,8 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
 
             # Класи + правила груп: без них розмітка в іншому датасеті втрачає
             # класи (vesicle → nucleus при bake). Імпорт їх мерджить.
-            for meta_path in (cfg.labels_file, cfg.group_classes_file):
+            for meta_path in (cfg.labels_file, cfg.group_classes_file,
+                              cfg.selected_dir.parent / "tracks.json"):
                 if meta_path and meta_path.exists():
                     zf.write(meta_path, meta_path.name)
 
@@ -1073,6 +1084,9 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
                 imported_sel = _read_scan_selections(src_dir)
                 m = _merge_workspace_meta(src_dir, cfg)
                 meta["labels_added"] += m.get("labels_added", [])
+                for k in ("tracks_copied", "tracks_kept_local"):
+                    if m.get(k):
+                        meta[k] = True
                 if m.get("group_classes_copied"):
                     meta["group_classes_copied"] = True
                 for stem in wanted:

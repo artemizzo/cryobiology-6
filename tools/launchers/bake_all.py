@@ -241,6 +241,14 @@ def pack_zip(data_dir: Path, archive_dir: Path, zip_name: str | None = None,
         if labels_path.exists():
             zf.write(labels_path, f"{archive_root}/labels.json")
         zf.writestr(f"{archive_root}/selections.json", json.dumps(selected, ensure_ascii=False, indent=2))
+        # Треки (tracks.py): tracks.json + MOT-таблиця на серію (кадр,трек,bbox).
+        tracks_path = data_dir / "tracks.json"
+        if tracks_path.exists():
+            zf.write(tracks_path, f"{archive_root}/tracks.json")
+            import tracks as _tracks
+            for series, lines in _tracks.mot_lines(_cfg, set(selected)).items():
+                zf.writestr(f"{archive_root}/tracks/{series.rstrip('_-. ') or 'series'}_mot.txt",
+                            "\n".join(lines) + "\n")
 
         for stem, entry in selected.items():
             model = entry.get("model")

@@ -6,7 +6,7 @@ Cryobiology V / **Mask Picker**: human-in-the-loop пайплайн доразм
 
 ## Де що читати (не дублюю — тут лише вказівники)
 - `README.md` — огляд, швидкий старт. `INSTALL.md` — встановлення, ваги, чистий ПК.
-- `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
+- `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md` + `17_TRACKS.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
 - `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-018), відкриті пункти — там.
 - `docs/CODE_AUDIT_PRINCIPLES.md` — **обовʼязково перед правками** (див. нижче).
 - `docs/TECHNICAL_REPORT.md`, `docs/PROJECT_JOURNEY.md` — історія й рішення.
@@ -30,7 +30,7 @@ python apps/segmentation/run_segmentation.py --data-dir data/<dataset>   # кр�
 python apps/mask_picker/app.py --workspace data/<dataset>                # крок 2 → http://127.0.0.1:5000
 python tools/launchers/bake_all.py --data-dir data/<dataset> --pack      # deliverable
 python tools/make_sandbox.py                                             # безпечна копія датасету для експериментів
-cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 247 passed)
+cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 253 passed)
 ```
 
 ### Docker (основний спосіб запуску для користувача)
@@ -73,7 +73,8 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   полігона + імпорт «просто фото» (`16`, F-015) → перевірка експорт/імпорт/повторна обробка (`16`§7;
   фікси F-016 класи губились, F-017 Split губив групи, F-018 дубль overlay) → ласо: тягнути вибрані точки /
   стрілки; тягнути весь полігон за тіло (`06`) → експорт «📷 Додати фото» (`16`§7) → тінь сусідніх фото
-  (onion skin, `ghost.js`, `06`§11; копіювання з тіні — у 🎯 Pick) + чіткість ліній/точок при зумі (`06`§12). Інструкція для людей по ручному режиму й карта збереження
+  (onion skin, `ghost.js`, `06`§11; копіювання з тіні — у 🎯 Pick) + чіткість ліній/точок при зумі (`06`§12)
+  → треки між кадрами серії як у CVAT (`17_TRACKS.md`). exe-лаунчер — НЕ робити (рішення: лишається Docker + ярлик). Інструкція для людей по ручному режиму й карта збереження
   даних — `README.md` §«Ручна розмітка». Відкриті ідеї: імпорт зовнішніх форматів розмітки (COCO/CVAT),
   native-діалоги вибору папки в Docker (`15`§6), попередження при bake про клас поза labels.json (F-016).
   Спостереження: у Playwright Esc не закриває редактор (і в оригінальній версії b214e9e) — не розслідувано.
@@ -93,6 +94,10 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   workspace додавати і в експорт, і в Split (`make_annotation_task.py`), і в імпорт.
 - **SVG редактора і зум:** товщина ліній — `calc(Npx * var(--zinv, 1))`, радіус точок — `_polyVertexR()`;
   `will-change` лише під час зуму (`06`§12). Нові SVG-елементи робити так само, інакше пікселі при наближенні.
+- **Треки** (`tracks.py`, `17`): SoT — `tracks.json`; на кадрах — звичайні полігони з `flags.track_id/keyframe`.
+  Синхронізація в КОЖНОМУ `POST /api/polygons/<stem>` (`sync_frame`). Полігон треку на кадрі оновлювати НА
+  МІСЦІ (індекс), видалення — з ремапом `groups polygon_indices`. Новий код, що пише polygons.json кадру в
+  обхід цього endpoint, — або кличе `sync_frame`, або свідомо ні (як `materialize`).
 - **Розрив полігона** (`editor/repair.js`, tool `"break"`): відкриті лінії живуть лише в `pg.repair`,
   commit пише у той самий індекс shape (групи не ламаються). Не зберігати відкриті лінії в `pg.shapes`.
 - Три ID-простори: `raw_iid` (модель), reserved-ID полігонів `50000+`, dense `1..N` лише у deliverable.

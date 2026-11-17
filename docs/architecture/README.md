@@ -9,7 +9,7 @@
 > [`_AUDIT_FINDINGS.md`](_AUDIT_FINDINGS.md).
 >
 > Метод аудиту — [`../CODE_AUDIT_PRINCIPLES.md`](../CODE_AUDIT_PRINCIPLES.md).
-> Стан: **APP_VERSION 2.0.0, pytest 247/247**.
+> Стан: **APP_VERSION 2.0.0, pytest 253/253**.
 
 ---
 
@@ -45,6 +45,7 @@
 | 12 | [12_DELIVERABLE_EXPORT.md](12_DELIVERABLE_EXPORT.md) | Finalize/ZIP, semantic/mask_groups/overlays, що отримує замовник | ✅ |
 | 13 | [13_SEGMENTATION_BOUNDARY.md](13_SEGMENTATION_BOUNDARY.md) | Контракт із сегментацією: raw output = read-only SSoT | ✅ |
 | 14 | [14_CROSS_CUTTING_MAP.md](14_CROSS_CUTTING_MAP.md) | Граф tool↔tool + реєстр multi-representation концептів (аудит-карта) | ✅ |
+| 17 | [17_TRACKS.md](17_TRACKS.md) | Треки між кадрами серії (як CVAT track): tracks.json, інтерполяція, синхронізація на збереження, split/merge, MOT | ✅ |
 | 16 | [16_MANUAL_MODE.md](16_MANUAL_MODE.md) | Ручна розмітка (псевдо-модель `manual`) + розрив полігона (сеанс ремонту `repair.js`) | ✅ |
 | 15 | [15_DOCKER.md](15_DOCKER.md) | Docker-образи (mask-picker / segmentation), compose, чому так, стан перевірки | ✅ |
 | — | [_AUDIT_FINDINGS.md](_AUDIT_FINDINGS.md) | Живий лог знайдених багів (severity/repro/консюмери/статус) | ✅ (живий) |

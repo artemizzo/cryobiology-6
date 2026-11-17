@@ -64,6 +64,7 @@ export const polygonsMixin = {
     this._updateHint();
     this._polyRedraw();
     this._ghostRedraw();
+    this._tracksUpdateButtons();
   },
 
   _svgCoordsFromEvent(e) {
@@ -934,11 +935,12 @@ export const polygonsMixin = {
       if (!pg.dirty || !this.state.open) return;
       try {
         const payload = this._polyBuildPayload();
-        await api(`/api/polygons/${encodeURIComponent(this.state.stem)}`, {
+        const resp = await api(`/api/polygons/${encodeURIComponent(this.state.stem)}`, {
           method: "POST",
           body: JSON.stringify(payload),
         });
         pg.dirty = false;
+        this._tracksApplyServerResult(resp.tracks);   // треки: оновлені інші кадри серії
         // Day 7: save без bake → stem незапечений. Тримаємо catalog у курсі
         // (жовта крапка + попередження у Groups-табі) навіть при autosave.
         const it = state.catalog.find((x) => x.stem === this.state.stem);
@@ -964,6 +966,7 @@ export const polygonsMixin = {
           { method: "POST", body: JSON.stringify(payload) },
         );
         pg.dirty = false;
+        this._tracksApplyServerResult(resp.tracks);
         // Позначити stem dirty у catalog → жовта крапка з'являється одразу.
         const it = state.catalog.find((x) => x.stem === this.state.stem);
         if (it && it.state) it.state.dirty = true;
@@ -1002,6 +1005,7 @@ export const polygonsMixin = {
     if (btnDelPiece) btnDelPiece.disabled = !r || r.selPiece < 0 || r.pieces.length <= 1;
     const btnClose = $("#polyRepairClose");
     if (btnClose) btnClose.disabled = !r || r.pieces.length !== 1;
+    this._tracksUpdateButtons();
     this._polyUpdateShapeLabelSelect();
   },
 
@@ -1079,6 +1083,10 @@ export const polygonsMixin = {
     this._layerMarkers().querySelectorAll("circle").forEach((c) => {
       c.setAttribute("r", String(this._polyVertexR(5)));
     });
+    const fs = `${12 * this._pxPerCss()}px`;   // підписи треків — сталий розмір на екрані
+    this._layerShapes().querySelectorAll("text.polygon-track-label").forEach((t) => {
+      t.style.fontSize = fs;
+    });
   },
 
   // Радіус точок у image-px, щоб на ЕКРАНІ він був сталим (~cssPx) за будь-якого
@@ -1117,6 +1125,7 @@ export const polygonsMixin = {
       poly.setAttribute("class", "polygon-shape");
       poly.dataset.si = String(si);
       layer.appendChild(poly);
+      this._tracksDrawLabel(layer, sh);   // «#id» для полігонів треку (tracks.js)
     });
   },
 
