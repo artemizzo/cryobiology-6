@@ -33,6 +33,12 @@ export const keysMixin = {
       return;
     }
     if (e.code === "Digit0" || e.code === "Numpad0") { e.preventDefault(); this.resetZoom(); return; }
+    // PageUp / PageDown — попереднє / наступне фото (як ◀ / ▶ у шапці редактора).
+    if (e.key === "PageUp" || e.key === "PageDown") {
+      e.preventDefault();
+      if (!e.repeat) this.gotoPhoto(e.key === "PageUp" ? -1 : 1);
+      return;
+    }
     if (e.code === "KeyO") {
       if (e.repeat) { e.preventDefault(); return; }
       e.preventDefault();

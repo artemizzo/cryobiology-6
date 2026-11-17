@@ -40,10 +40,10 @@
 import { $, showToast } from "../util.js";
 import { api } from "../api.js";
 import {
-  appLabels, currentItem,
-  DEFAULT_LABEL,
+  appLabels, currentItem, filtered,
+  DEFAULT_LABEL, state as appState,
 } from "../state.js";
-import { renderAll } from "../catalog.js";
+import { renderAll, next as catalogNext, prev as catalogPrev, selectModel } from "../catalog.js";
 import { _clearPolygonsCache } from "../polyoverlay.js";
 
 import { tabsMixin } from "./tabs.js";
@@ -443,6 +443,36 @@ export const editor = {
     });
   },
 
+  // ◀ / ▶ у шапці редактора (PageUp / PageDown): зберегти й закрити це фото,
+  // перейти до сусіднього у списку і відкрити його на ТІЙ САМІЙ вкладці. Якщо в
+  // сусіднього фото ще нема обраного варіанта, а поточний (напр. «manual»)
+  // доступний — обрати його, щоб одразу розмічати далі.
+  async gotoPhoto(delta) {
+    if (this._navBusy) return;
+    const list = filtered();
+    const target = appState.idx + delta;
+    if (target < 0 || target >= list.length) {
+      showToast(delta < 0 ? "Це перше фото у списку" : "Це останнє фото у списку", "warn", 1800);
+      return;
+    }
+    this._navBusy = true;
+    try {
+      const tab = this.state.activeTab;
+      const curModel = this.state.model;
+      await (delta > 0 ? catalogNext() : catalogPrev());   // flush + close редактора
+      const it = currentItem();
+      if (!it) return;
+      let model = it.state && it.state.status === "selected" ? it.state.model : null;
+      if (!model && curModel && (it.available_models || []).includes(curModel)) {
+        await selectModel(curModel);
+        model = curModel;
+      }
+      await this.open(model, { tab: model || tab !== "cleanup" ? tab : "polygons" });
+    } finally {
+      this._navBusy = false;
+    }
+  },
+
   async close(skipFlush = false) {
     if (!this.state.open) return;
     if (this.state.polygons.repair) this._repairCancel("редактор закрито");
@@ -499,7 +529,12 @@ export const editor = {
     // flush (швидка навігація + закриття) повертає той самий проміс,
     // а не запускає другий flush з паралельними POST.
     if (this._flushPromise) return this._flushPromise;
-    this._flushPromise = (async () => {
+    const pr = (async () => {
+      // F-019: без цього await при закритому редакторі тіло (і finally, що
+      // скидає _flushPromise) виконувалось СИНХРОННО — ДО присвоєння нижче →
+      // _flushPromise лишався назавжди «зайнятим»: × закривав без збереження,
+      // Esc не закривав, перехід між фото втрачав незбережені зміни.
+      await null;
       try {
         if (!this.state.open) return;
         if (this.state.polygons.dirty) await this._polySave(true);
@@ -511,9 +546,10 @@ export const editor = {
         await this._groupsFlushIfDirty();
         await this.close(true);
       } finally {
-        this._flushPromise = null;
+        if (this._flushPromise === pr) this._flushPromise = null;
       }
     })();
-    return this._flushPromise;
+    this._flushPromise = pr;
+    return pr;
   },
 };

@@ -6,7 +6,7 @@
  */
 
 import { $ } from "../util.js";
-import { state, DEFAULT_LABEL } from "../state.js";
+import { state, DEFAULT_LABEL, filtered } from "../state.js";
 import { setActiveLabel } from "../labels.js";
 
 export const tabsMixin = {
@@ -135,6 +135,12 @@ export const tabsMixin = {
     const { stem, model } = this.state;
     const t = $("#cleanupTitle");
     t.textContent = `Editor: ${stem}${model ? " — " + model : ""}`;
+    const pos = $("#editorPhotoPos");
+    if (pos) {
+      const list = filtered();
+      const i = list.findIndex((it) => it.stem === stem);
+      pos.textContent = i >= 0 ? `${i + 1} / ${list.length}` : "";
+    }
   },
 
   _updateHint() {

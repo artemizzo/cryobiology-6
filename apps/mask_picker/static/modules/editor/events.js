@@ -99,6 +99,8 @@ export const eventsMixin = {
     $("#polyRepairClose").onclick = () => this._repairCommit();
     $("#polyGhostPrev").onclick = () => this._ghostToggle("prev");
     $("#polyGhostNext").onclick = () => this._ghostToggle("next");
+    $("#editorPrevPhoto").onclick = () => this.gotoPhoto(-1);
+    $("#editorNextPhoto").onclick = () => this.gotoPhoto(1);
     $("#trackCreate").onclick = () => this._trackCreate();
     $("#trackOutside").onclick = () => this._trackOutside();
     $("#trackSplit").onclick = () => this._trackSplit();
