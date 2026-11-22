@@ -5,7 +5,7 @@ Cryobiology V / **Mask Picker**: human-in-the-loop пайплайн доразм
 домальовує й групує («1 ядро + N везикул») → бекенд «запікає» ground-truth датасет.
 
 ## Де що читати (не дублюю — тут лише вказівники)
-- `README.md` — огляд, швидкий старт. `INSTALL.md` — встановлення, ваги, чистий ПК.
+- `TEAM.md` — інструкція встановлення для команди анотаторів (Docker + Git + clone + ярлик, обмін ZIP). `README.md` — огляд, швидкий старт. `INSTALL.md` — встановлення, ваги, чистий ПК.
 - `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md` + `17_TRACKS.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
 - `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-019), відкриті пункти — там.
 - `docs/CODE_AUDIT_PRINCIPLES.md` — **обовʼязково перед правками** (див. нижче).
