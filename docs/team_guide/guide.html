@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<title>Mask Picker — інструкція для команди</title>
+<!-- Джерело PDF-інструкції. Перегенерувати: node docs/team_guide/build_pdf.js -->
+<style>
+  @page { size: A4; margin: 16mm 15mm 16mm 15mm; }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #1d2330; }
+  h1 { font-size: 22pt; margin: 0 0 4px; color: #1b3a6b; }
+  h2 { font-size: 14.5pt; color: #1b3a6b; border-bottom: 2px solid #c9d6ea; padding-bottom: 3px; margin: 22px 0 8px; break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 14px 0 4px; break-after: avoid; }
+  p { margin: 5px 0; }
+  ol, ul { margin: 4px 0 6px; padding-left: 22px; }
+  li { margin: 3px 0; }
+  b { color: #10203d; }
+  code, .cmd { font-family: "DejaVu Sans Mono", Consolas, monospace; }
+  code { background: #eef2f8; padding: 1px 4px; border-radius: 3px; font-size: 9.5pt; }
+  .cmd { display: block; background: #1e2633; color: #e8f0ff; padding: 7px 10px; border-radius: 5px; margin: 5px 0 7px; font-size: 10pt; white-space: pre-wrap; break-inside: avoid; }
+  .box { border-radius: 6px; padding: 7px 11px; margin: 8px 0; break-inside: avoid; }
+  .tip  { background: #eaf4ea; border-left: 4px solid #3d9a4a; }
+  .warn { background: #fff4e0; border-left: 4px solid #e39b17; }
+  .see  { background: #eef3fb; border-left: 4px solid #4a78c2; }
+  .box p:first-child { margin-top: 0; } .box p:last-child { margin-bottom: 0; }
+  .lead { font-size: 11.5pt; color: #3a4558; margin: 4px 0 12px; }
+  table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 9.8pt; break-inside: auto; }
+  td, th { border: 1px solid #cfd8e6; padding: 5px 7px; vertical-align: top; text-align: left; }
+  th { background: #eef2f8; }
+  tr { break-inside: avoid; }
+  .check td:first-child { width: 22px; text-align: center; font-size: 12pt; }
+  .cover { border: 2px solid #c9d6ea; border-radius: 8px; padding: 12px 16px; margin: 10px 0 6px; }
+  .key { display: inline-block; border: 1px solid #9aa8bf; border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-family: "DejaVu Sans Mono", monospace; font-size: 9pt; background: #fafbfd; }
+  .pb { break-before: page; }
+  .small { font-size: 9pt; color: #5a6578; }
+</style>
+</head>
+<body>
+
+<h1>Mask Picker</h1>
+<p class="lead">Інструкція для команди: як встановити програму для розмітки клітин і почати працювати.<br>
+Написано для тих, хто ніколи не працював з Docker, Git чи командним рядком — просто йди по кроках.</p>
+
+<div class="cover">
+<p><b>Що треба мати:</b></p>
+<ul>
+  <li>ноутбук / ПК з <b>Windows 10 або 11</b>;</li>
+  <li><b>8 ГБ</b> оперативної пам'яті або більше (на 4 ГБ працюватиме дуже повільно);</li>
+  <li><b>15 ГБ</b> вільного місця на диску C:;</li>
+  <li>інтернет (бажано не мобільний — завантажиться близько 2–3 ГБ);</li>
+  <li>близько <b>40–60 хвилин</b> часу. Встановлення робиться <b>один раз</b>.</li>
+</ul>
+<p><b>План:</b> 1) перевірити ПК → 2) встановити Docker → 3) встановити Git → 4) завантажити програму →
+5) створити ярлик і запустити → 6) працювати.</p>
+</div>
+
+<div class="box see">
+<p><b>Що таке Docker і Git, у двох словах.</b> <b>Docker</b> — це «коробка», в якій працює наша програма: усе
+потрібне вже всередині, нічого окремо (Python, бібліотеки) ставити не треба. <b>Git</b> — програма, яка
+завантажує наш проєкт з сайту GitHub і потім одним рядком його оновлює.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2>Крок 1. Перевірити ПК (2 хвилини)</h2>
+
+<h3>1.1. Скільки пам'яті й який процесор</h3>
+<ol>
+  <li>Натисни <b>Пуск</b> → <b>Параметри</b> (шестерня) → <b>Система</b> → <b>Про систему</b> (в самому низу списку).</li>
+  <li>Подивись рядки:
+    <ul>
+      <li><b>Встановлена ОЗП</b> — має бути 8 ГБ або більше;</li>
+      <li><b>Тип системи</b> — має бути «64-розрядна операційна система, процесор x64».</li>
+    </ul>
+  </li>
+</ol>
+<div class="box warn"><p>Якщо там написано <b>«процесор на базі ARM»</b> (буває на нових ноутбуках зі Snapdragon) —
+зупинись і напиши Артему, для такого ПК кроки трохи інші.</p></div>
+
+<h3>1.2. Чи увімкнена віртуалізація</h3>
+<p>Docker потребує функцію процесора, яка називається «віртуалізація». На більшості ПК вона вже увімкнена.</p>
+<ol>
+  <li>Натисни разом <span class="key">Ctrl</span> + <span class="key">Shift</span> + <span class="key">Esc</span> — відкриється <b>Диспетчер завдань</b>.</li>
+  <li>Зліва (або вгорі) обери вкладку <b>Продуктивність</b> → <b>ЦП</b> (CPU).</li>
+  <li>Внизу праворуч знайди рядок <b>Віртуалізація</b> (Virtualization).</li>
+</ol>
+<div class="box tip"><p><b>Увімкнено</b> (Enabled) — все добре, йди далі.</p></div>
+<div class="box warn"><p><b>Вимкнено</b> (Disabled) — її вмикають у BIOS ноутбука. Це не складно, але залежить від моделі:
+загугли «<i>модель твого ноутбука</i> enable virtualization BIOS» або попроси Артема допомогти.
+Без цього Docker не запуститься.</p></div>
+
+<!-- ============================================================ -->
+<h2>Крок 2. Встановити Docker Desktop (15–25 хвилин)</h2>
+
+<h3>2.1. Завантажити</h3>
+<ol>
+  <li>Відкрий у браузері сайт: <code>https://www.docker.com/products/docker-desktop/</code></li>
+  <li>Натисни кнопку <b>Download Docker Desktop</b> і обери <b>Download for Windows – AMD64</b>
+      (саме AMD64, навіть якщо в тебе процесор Intel — це нормально).</li>
+  <li>Завантажиться файл <b>Docker Desktop Installer.exe</b> (близько 500 МБ) — у папку «Завантаження».</li>
+</ol>
+
+<h3>2.2. Встановити</h3>
+<ol>
+  <li>Двічі клікни <b>Docker Desktop Installer.exe</b>.</li>
+  <li>Windows спитає «Дозволити цій програмі вносити зміни?» — натисни <b>Так</b>.</li>
+  <li>З'явиться вікно Configuration з галочками. <b>Нічого не міняй</b>, головне — щоб була відмічена
+      <b>Use WSL 2 instead of Hyper-V (recommended)</b>. Натисни <b>OK</b>.</li>
+  <li>Чекай, поки йде встановлення (5–10 хв).</li>
+  <li>Коли з'явиться кнопка <b>Close and restart</b> (або <b>Close and log out</b>) — збережи все, що відкрито,
+      і натисни її. <b>ПК перезавантажиться</b> — це обов'язково.</li>
+</ol>
+
+<h3>2.3. Перший запуск Docker</h3>
+<p>Після перезавантаження Docker Desktop відкриється сам (якщо ні — знайди його в меню Пуск: набери «Docker»).</p>
+<ol>
+  <li><b>Docker Subscription Service Agreement</b> (угода) — натисни <b>Accept</b>.
+      Для студентів і особистого використання Docker безкоштовний.</li>
+  <li>Можуть спитати про налаштування — обирай <b>Use recommended settings</b> → <b>Finish</b>.</li>
+  <li>Пропозиція увійти чи зареєструватися (Sign in / Sign up) — <b>реєструватися не треба</b>:
+      натисни <b>Skip</b> або <b>Continue without signing in</b>.</li>
+  <li>Опитування (survey) — теж <b>Skip</b>.</li>
+  <li>Чекай, поки в лівому нижньому куті вікна Docker з'явиться зелене <b>Engine running</b>.</li>
+</ol>
+<div class="box see"><p>Назви кнопок у нових версіях Docker можуть трохи відрізнятися — зміст той самий:
+погодитись з угодою, пропустити реєстрацію, дочекатися «Engine running».</p></div>
+
+<div class="box warn">
+<p><b>Якщо Docker пише, що треба оновити WSL</b> («WSL needs updating», «WSL 2 installation is incomplete»):</p>
+<ol>
+  <li>Натисни <b>Пуск</b>, набери <b>PowerShell</b>, натисни <span class="key">Enter</span>.</li>
+  <li>У синьому/чорному вікні надрукуй (або встав) команду і натисни <span class="key">Enter</span>:</li>
+</ol>
+<span class="cmd">wsl --update</span>
+<p>Дочекайся кінця, перезавантаж ПК і знову відкрий Docker Desktop.</p>
+</div>
+
+<div class="box tip"><p><b>Порада:</b> у Docker Desktop натисни шестерню (Settings) вгорі → <b>General</b> → відміть
+<b>Start Docker Desktop when you sign in to your computer</b> → <b>Apply</b>. Тоді Docker вмикатиметься
+разом з Windows і програма стартуватиме швидше. (Не обов'язково.)</p></div>
+
+<!-- ============================================================ -->
+<h2>Крок 3. Встановити Git (5 хвилин)</h2>
+<ol>
+  <li>Відкрий сайт: <code>https://git-scm.com/download/win</code></li>
+  <li>Натисни <b>Click here to download</b> (або <b>64-bit Git for Windows Setup</b>) — завантажиться файл
+      на зразок <b>Git-2.xx.x-64-bit.exe</b>.</li>
+  <li>Двічі клікни його → «Дозволити вносити зміни?» → <b>Так</b>.</li>
+  <li>Буде багато вікон з налаштуваннями. <b>Нічого не міняй — просто тисни Next</b> у кожному.</li>
+  <li>В останньому вікні — <b>Install</b>, чекай хвилину, потім <b>Finish</b>
+      (галочку «View Release Notes» можна зняти).</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2>Крок 4. Завантажити програму (3 хвилини)</h2>
+
+<h3>4.1. Відкрити PowerShell</h3>
+<p><b>PowerShell</b> — вікно, куди пишуть команди текстом. Нам треба лише кілька команд, їх можна копіювати звідси.</p>
+<ol>
+  <li>Натисни <b>Пуск</b>, надрукуй <b>PowerShell</b>, натисни <span class="key">Enter</span>.</li>
+  <li>Відкриється вікно з текстом на зразок <code>PS C:\Users\Ім'я&gt;</code> і миготливим курсором.</li>
+</ol>
+<div class="box see"><p><b>Як вставити команду:</b> скопіюй її з цього PDF (<span class="key">Ctrl</span>+<span class="key">C</span>),
+клікни у вікно PowerShell і натисни <span class="key">Ctrl</span>+<span class="key">V</span> (або просто
+<b>правий клік мишкою</b>). Потім натисни <span class="key">Enter</span>. Кожну команду — окремо, по черзі.</p></div>
+
+<h3>4.2. Виконати три команди</h3>
+<p>Перейти в папку «Документи»:</p>
+<span class="cmd">cd $HOME\Documents</span>
+<p>Завантажити програму (з'явиться кілька рядків на зразок <code>Cloning into 'cryobiology-6'... done</code>):</p>
+<span class="cmd">git clone https://github.com/artemizzo/cryobiology-6.git</span>
+<p>Відкрити папку програми у звичайному провіднику Windows:</p>
+<span class="cmd">explorer cryobiology-6</span>
+<div class="box warn"><p>Якщо пише <b>«git не розпізнано як ім'я командлету»</b> (git is not recognized) — закрий вікно
+PowerShell, відкрий його знову і повтори команди. Не допомогло — перевстанови Git (крок 3).</p></div>
+<p>Вікно PowerShell тепер можна закрити.</p>
+
+<!-- ============================================================ -->
+<h2>Крок 5. Створити ярлик і запустити (перший раз — 10–20 хвилин)</h2>
+<ol>
+  <li>У папці <b>cryobiology-6</b>, яка щойно відкрилась, знайди файл <b>create_shortcuts</b>
+      (з шестернею на значку; повна назва — <code>create_shortcuts.bat</code>) і двічі клікни його.</li>
+  <li>Відкриється чорне вікно з написом «Створено: …» — натисни будь-яку клавішу, щоб його закрити.</li>
+  <li>На робочому столі з'явився ярлик <b>Mask Picker</b>. Двічі клікни його.</li>
+  <li>З'явиться маленьке віконце зі статусом: «Перевіряю Docker…», «Запускаю / перевіряю оновлення…».
+      <b>Перший раз це довго — 10–20 хвилин</b>: програма збирається і качає потрібне з інтернету.
+      Не закривай віконце, не вимикай інтернет.</li>
+  <li>Коли все готово, сам відкриється браузер зі сторінкою <code>http://localhost:5000</code> — це і є програма.</li>
+</ol>
+<div class="box tip"><p>Наступні запуски — <b>секунди</b>: просто двічі клікни ярлик Mask Picker.
+Якщо Docker не запущений, ярлик запустить його сам (тоді 1–2 хвилини).</p></div>
+<div class="box warn"><p><b>Якщо відкрилось чорне вікно з купою тексту</b> — це означає помилку, і в ньому написано причину.
+Зроби скріншот цього вікна (<span class="key">Win</span>+<span class="key">Shift</span>+<span class="key">S</span>)
+і надішли Артему. Також можна надіслати файл <code>cryobiology-6\_logs\launcher.log</code>.</p></div>
+
+<!-- ============================================================ -->
+<h2>Крок 6. Як працювати</h2>
+<h3>Перший раз</h3>
+<ol>
+  <li>Вгорі сторінки в полі <b>«Хто розмічає»</b> впиши своє ім'я.</li>
+  <li>Кнопка <b>📥 Імпорт</b> → обери фото (ZIP-архів або jpg/png) або архів з розміткою, який тобі надіслали.</li>
+  <li>Список фото — зліва. Обери фото → картка <b>«✋ Ручна розмітка»</b> → відкриється редактор.</li>
+  <li>Усі клавіші та кнопки — кнопка <b>?</b> вгорі сторінки або клавіша <span class="key">?</span>.</li>
+</ol>
+
+<h3>Кожного разу</h3>
+<table>
+  <tr><th style="width:32%">Що</th><th>Як</th></tr>
+  <tr><td>Почати роботу</td><td>Двічі клікнути ярлик <b>Mask Picker</b> на робочому столі.</td></tr>
+  <tr><td>Перейти до сусіднього фото</td><td>Кнопки <b>◀ / ▶</b> у шапці редактора (або <span class="key">PageUp</span> / <span class="key">PageDown</span>) — поточне фото зберігається саме.</td></tr>
+  <tr><td>Скасувати дію</td><td><span class="key">Ctrl</span>+<span class="key">Z</span> (повторити — <span class="key">Ctrl</span>+<span class="key">Shift</span>+<span class="key">Z</span>).</td></tr>
+  <tr><td>Закінчити роботу</td><td>Натиснути <b>💾 Зберегти все</b> вгорі. Потім закрити браузер і вимкнути Docker:
+      правий клік на значку кита <b>🐳</b> біля годинника (може ховатись під стрілочкою <b>^</b>) → <b>Quit Docker Desktop</b>.</td></tr>
+</table>
+
+<div class="box see"><p><b>Де лежить твоя робота:</b> у папці <code>Документи\cryobiology-6\data\</code>.
+Не видаляй і не переноси папку <b>cryobiology-6</b> — там і програма, і вся твоя розмітка.
+Якщо все ж переніс — двічі клікни <b>create_shortcuts</b> у новому місці, щоб оновити ярлик.</p></div>
+
+<!-- ============================================================ -->
+<h2>Крок 7. Передати свою розмітку</h2>
+<ol>
+  <li>Кнопка <b>📤 Експорт</b> → відміть фото, які хочеш передати.</li>
+  <li>Якщо в отримувача цих фото ще нема — постав галочку <b>«📷 Додати фото»</b>.</li>
+  <li>Натисни <b>Експортувати</b> (поле «Зберегти у» лиши порожнім) — ZIP-архів скачається в папку «Завантаження», як звичайний файл з інтернету.</li>
+  <li>Надішли цей ZIP (Telegram, Google Drive, пошта…).</li>
+  <li>Отримувач у себе: <b>📥 Імпорт</b> → обирає цей ZIP.</li>
+</ol>
+<div class="box warn"><p>Одну серію кадрів (фото з назвами <code>назва_001</code>, <code>назва_002</code>…) краще розмічати
+<b>одній людині</b>: номери треків клітин з різних ПК не об'єднуються.</p></div>
+
+<!-- ============================================================ -->
+<h2>Крок 8. Оновити програму</h2>
+<p>Коли Артем скаже, що вийшла нова версія:</p>
+<ol>
+  <li>Відкрий PowerShell (Пуск → PowerShell → <span class="key">Enter</span>) і виконай по черзі:</li>
+</ol>
+<span class="cmd">cd $HOME\Documents\cryobiology-6</span>
+<span class="cmd">git pull</span>
+<ol start="2">
+  <li>Двічі клікни ярлик <b>Mask Picker</b> — він сам перезбере програму (1–3 хвилини).</li>
+</ol>
+<p>Твоя розмітка в папці <code>data</code> при оновленні <b>не змінюється</b>.</p>
+
+<!-- ============================================================ -->
+<h2>Якщо щось не так</h2>
+<table>
+  <tr><th style="width:38%">Що бачиш</th><th>Що робити</th></tr>
+  <tr><td>Docker пише про віртуалізацію («Virtualization support not detected»)</td><td>Увімкнути віртуалізацію в BIOS — див. крок 1.2.</td></tr>
+  <tr><td>Docker пише про WSL</td><td>PowerShell → <code>wsl --update</code> → перезавантажити ПК (крок 2.3).</td></tr>
+  <tr><td>Docker довго «Starting…» і не стає «Engine running»</td><td>Перезавантажити ПК. Не допомогло — написати Артему.</td></tr>
+  <tr><td>Браузер пише «Не вдається отримати доступ до сайту»</td><td>Програма ще запускається — зачекати хвилину й оновити сторінку (<span class="key">F5</span>). Або ще раз клікнути ярлик.</td></tr>
+  <tr><td>Відкрилось чорне вікно з текстом після кліку на ярлик</td><td>Скріншот вікна → Артему.</td></tr>
+  <tr><td>«no space left on device» / мало місця</td><td>Звільнити місце на диску C: (потрібно від 15 ГБ).</td></tr>
+  <tr><td><code>git pull</code> пише щось про «conflict» або «local changes»</td><td>Нічого не робити самому — скріншот Артему.</td></tr>
+  <tr><td>Ярлик зник / не працює після переносу папки</td><td>Двічі клікнути <b>create_shortcuts</b> у папці cryobiology-6.</td></tr>
+</table>
+
+<h3>Чекліст встановлення</h3>
+<table class="check">
+  <tr><td>☐</td><td>ОЗП 8 ГБ+, Windows 64-розрядна x64, віртуалізація «Увімкнено»</td></tr>
+  <tr><td>☐</td><td>Docker Desktop встановлено, ПК перезавантажено, внизу вікна Docker — «Engine running»</td></tr>
+  <tr><td>☐</td><td>Git встановлено</td></tr>
+  <tr><td>☐</td><td>Папка <code>Документи\cryobiology-6</code> є</td></tr>
+  <tr><td>☐</td><td>Ярлик <b>Mask Picker</b> на робочому столі; після кліку відкрився браузер з програмою</td></tr>
+  <tr><td>☐</td><td>Вписано своє ім'я в «Хто розмічає»</td></tr>
+</table>
+
+<p class="small" style="margin-top:14px">Детальніше: файл <code>TEAM.md</code> і <code>docs/HOTKEYS.md</code> у папці програми або на
+сторінці проєкту github.com/artemizzo/cryobiology-6.</p>
+
+</body>
+</html>
