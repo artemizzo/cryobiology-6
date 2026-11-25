@@ -83,9 +83,45 @@
   <li>Внизу праворуч знайди рядок <b>Віртуалізація</b> (Virtualization).</li>
 </ol>
 <div class="box tip"><p><b>Увімкнено</b> (Enabled) — все добре, йди далі.</p></div>
-<div class="box warn"><p><b>Вимкнено</b> (Disabled) — її вмикають у BIOS ноутбука. Це не складно, але залежить від моделі:
-загугли «<i>модель твого ноутбука</i> enable virtualization BIOS» або попроси Артема допомогти.
-Без цього Docker не запуститься.</p></div>
+<div class="box warn"><p><b>Вимкнено</b> (Disabled) — її треба увімкнути <b>один раз</b> у BIOS (налаштування ноутбука,
+які працюють ще до Windows). Це один перемикач, нижче — як. Без цього Docker не запуститься.</p></div>
+
+<h3>1.3. Як увімкнути віртуалізацію (10 хвилин)</h3>
+<div class="box see"><p>Сфотографуй або відкрий цю сторінку на телефоні — під час кроків нижче Windows буде вимкнений.
+Збережи й закрий усі відкриті документи.</p></div>
+<p><b>Зайти в BIOS через Windows</b> (не треба знати жодних клавіш):</p>
+<ol>
+  <li><b>Windows 11:</b> Пуск → <b>Параметри</b> → <b>Система</b> → <b>Відновлення</b> → навпроти «Розширений запуск»
+      натисни <b>Перезавантажити зараз</b>.<br>
+      <b>Windows 10:</b> Пуск → <b>Параметри</b> → <b>Оновлення та безпека</b> → <b>Відновлення</b> → «Особливі варіанти
+      завантаження» → <b>Перезавантажити зараз</b>.</li>
+  <li>З'явиться синій екран з плитками. Обери: <b>Усунення несправностей</b> → <b>Додаткові параметри</b> →
+      <b>Настройки вбудованого ПЗ UEFI</b> (UEFI Firmware Settings) → <b>Перезавантажити</b>.</li>
+  <li>Відкриється BIOS — екран з англійськими меню. Миша може не працювати: ходи <b>стрілками</b>,
+      обирай <span class="key">Enter</span>, назад — <span class="key">Esc</span>.</li>
+</ol>
+<p><b>Знайти перемикач.</b> Він зазвичай у вкладці <b>Advanced</b>, <b>Configuration</b>, <b>CPU Configuration</b>,
+<b>System Configuration</b> або <b>Security</b>. Називається одним із цих способів:</p>
+<table>
+  <tr><th style="width:30%">Процесор</th><th>Назва пункту</th></tr>
+  <tr><td>Intel</td><td><b>Intel Virtualization Technology</b>, <b>Intel VT-x</b>, <b>Virtualization Technology</b></td></tr>
+  <tr><td>AMD</td><td><b>SVM Mode</b>, <b>AMD-V</b>, <b>Virtualization</b></td></tr>
+</table>
+<ol>
+  <li>Стань на цей пункт, натисни <span class="key">Enter</span> і обери <b>Enabled</b>.</li>
+  <li>Збережи й вийди: зазвичай <span class="key">F10</span> → <b>Yes</b> (або вкладка <b>Exit</b> →
+      <b>Save Changes and Exit</b>). Ноутбук перезавантажиться у Windows.</li>
+  <li>Перевір у Диспетчері завдань (крок 1.2) — має бути <b>Увімкнено</b>.</li>
+</ol>
+<div class="box warn">
+<p><b>Важливо:</b> не міняй у BIOS нічого іншого. Якщо випадково щось змінив — вийди <b>без збереження</b>:
+<span class="key">Esc</span> → <b>Discard Changes and Exit</b> (або «Exit Without Saving»).</p>
+<p><b>Немає пункту «Настройки вбудованого ПЗ UEFI»?</b> Вимкни ноутбук, увімкни і одразу часто тисни клавішу BIOS:
+<b>F2</b> (Asus, Acer, Dell, Samsung, більшість Lenovo IdeaPad), <b>F1</b> (Lenovo ThinkPad),
+<b>Esc</b>, потім <b>F10</b> (HP), <b>Del</b> (стаціонарні ПК, MSI, Gigabyte). Інколи разом з <span class="key">Fn</span>.</p>
+<p><b>BIOS просить пароль</b> (буває на ноутбуках університету чи роботи) — сам не обійдеш, звернись до того,
+хто видав ноутбук, або до Артема.</p>
+</div>
 
 <!-- ============================================================ -->
 <h2>Крок 2. Встановити Docker Desktop (15–25 хвилин)</h2>
@@ -244,7 +280,7 @@ PowerShell, відкрий його знову і повтори команди.
 <h2>Якщо щось не так</h2>
 <table>
   <tr><th style="width:38%">Що бачиш</th><th>Що робити</th></tr>
-  <tr><td>Docker пише про віртуалізацію («Virtualization support not detected»)</td><td>Увімкнути віртуалізацію в BIOS — див. крок 1.2.</td></tr>
+  <tr><td>Docker пише про віртуалізацію («Virtualization support not detected»)</td><td>Увімкнути віртуалізацію в BIOS — крок 1.3.</td></tr>
   <tr><td>Docker пише про WSL</td><td>PowerShell → <code>wsl --update</code> → перезавантажити ПК (крок 2.3).</td></tr>
   <tr><td>Docker довго «Starting…» і не стає «Engine running»</td><td>Перезавантажити ПК. Не допомогло — написати Артему.</td></tr>
   <tr><td>Браузер пише «Не вдається отримати доступ до сайту»</td><td>Програма ще запускається — зачекати хвилину й оновити сторінку (<span class="key">F5</span>). Або ще раз клікнути ярлик.</td></tr>
