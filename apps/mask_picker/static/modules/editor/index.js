@@ -40,11 +40,12 @@
 import { $, showToast } from "../util.js";
 import { api } from "../api.js";
 import {
-  appLabels, currentItem, filtered,
+  appLabels, usableLabels, currentItem, filtered,
   DEFAULT_LABEL, state as appState,
 } from "../state.js";
 import { renderAll, goto as catalogGoto, selectModel } from "../catalog.js";
 import { _clearPolygonsCache } from "../polyoverlay.js";
+import { setActiveLabel, _buildLabelDropdown } from "../labels.js";
 
 import { tabsMixin } from "./tabs.js";
 import { zoompanMixin } from "./zoompan.js";
@@ -57,6 +58,7 @@ import { historyMixin } from "./history.js";
 import { repairMixin } from "./repair.js";
 import { ghostMixin } from "./ghost.js";
 import { tracksMixin } from "./tracks.js";
+import { timelineMixin } from "./timeline.js";
 
 export const editor = {
   state: {
@@ -205,6 +207,7 @@ export const editor = {
   ...repairMixin,
   ...ghostMixin,
   ...tracksMixin,
+  ...timelineMixin,
 
   // =================================================================
   //                              OPEN / CLOSE
@@ -238,13 +241,16 @@ export const editor = {
     s.stem = it.stem;
     s.model = modelName || null;
     s.activeTab = tab;
+    const usable = usableLabels(it.stem);
     s.baseLabel = (it.state && it.state.base_label)
-      || (appLabels[0] && appLabels[0].name)
+      || (usable[0] && usable[0].name)
       || DEFAULT_LABEL;
     // Перехід ◀/▶ (opts.view): зум і положення камери лишаються як на попередньому фото.
     if (opts.view) { s.scale = opts.view.scale; s.panX = opts.view.panX; s.panY = opts.view.panY; }
     else { s.scale = 1; s.panX = 0; s.panY = 0; }
     s.isPanning = false; s.spaceDown = false;
+    s.bgPeek = null;            // Shift+Q/W — фон сусіднього кадру, при новому фото скидається
+    this._bgPeekBadge();
     s.bgPreviewPrev = null;
     this._historyClear();   // новий стем = свіжа історія (global undo/redo)
 
@@ -285,6 +291,9 @@ export const editor = {
     gr.lasso = null;
     gr.peekUngrouped = false;   // hold-state не переноситься між фото
 
+    // Набір класів цього фото: список класів і 1–9 — лише його класи.
+    if (!usable.some((l) => l.name === s.polygons.activeLabel) && usable[0]) setActiveLabel(usable[0].name);
+    _buildLabelDropdown();
     this._applyZoomTransform();
     this._renderTabs();
     this._updateTitle();
@@ -340,6 +349,8 @@ export const editor = {
       this._updateStats();
       this._updateHint();
       this._ghostOnOpen();   // тінь сусідніх фото (async; W/H уже відомі)
+      this._timelineOnOpen();   // таймлайн серії (async)
+      this._tlApplyPendingSelect();
       return true;
     } catch (e) {
       if (stale()) return false;
@@ -532,7 +543,7 @@ export const editor = {
       this._navBusy = false;
       this._navTarget = null;
       this._navLoading = null;
-      if (this.state.open) this._updateTitle();
+      if (this.state.open) { this._updateTitle(); this._tlApplyPendingSelect(); this._timelineDraw(); }
     }
   },
 
@@ -580,7 +591,7 @@ export const editor = {
     // reopen на Polygons показував стару білу групову підсвітку (SVG-діти
     // лишались у DOM від попереднього сеансу редактора).
     this._groupsClearVisualLayers();
-    if (!this._navKeepModal) this._modal().classList.remove("open");
+    if (!this._navKeepModal) { this._modal().classList.remove("open"); this._tlStop(); }
     this._wrap().classList.remove("has-cursor-ok", "is-panning", "can-pan", "polygon-mode");
     this._svg().classList.remove("svg--active");
     if (this.state.stem) _clearPolygonsCache(this.state.stem);

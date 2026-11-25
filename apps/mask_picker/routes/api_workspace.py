@@ -53,6 +53,7 @@ from baking import (
 )
 from data_sync import bake_with_resync
 from catalog import CatalogService
+import label_sets as LS
 from workspace import WORKSPACE_META_FILES, _find_marker_index, switch_workspace
 
 
@@ -543,6 +544,10 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
                               cfg.selected_dir.parent / "tracks.json"):
                 if meta_path and meta_path.exists():
                     zf.write(meta_path, meta_path.name)
+            # Набори класів експортованих фото (label_sets.py).
+            ls_sub = LS.subset(cfg, stem_filter)
+            if ls_sub:
+                zf.writestr(LS.FILE_NAME, json.dumps(ls_sub, ensure_ascii=False, indent=2))
 
             # Галочка «📷 Додати фото» (?images=1): самодостатній архів — фото +
             # сирий вихід обраної моделі (output/<model>/), щоб розмітку можна
@@ -712,6 +717,9 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, allowZip64=True) as zf:
             labels_path = cfg.selected_dir.parent / "labels.json"
             _write_if_exists(zf, labels_path, "labels.json")
+            ls_sub = LS.subset(cfg, [stem])
+            if ls_sub:
+                zf.writestr(LS.FILE_NAME, json.dumps(ls_sub, ensure_ascii=False, indent=2))
 
             image_name = _find_image_filename(cfg.images_dir, stem)
             if image_name:
@@ -1071,6 +1079,7 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
         merged: list[str] = []      # imported переміг → застосовано
         kept_local: list[str] = []  # local новіший → залишено
         meta: dict = {"labels_added": []}
+        archive_labels: list[str] = []   # класи з архіву для вікна «Класи для цих фото»
         try:
             for pick in picks:
                 try:
@@ -1106,6 +1115,8 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
                         merged.append(stem)
                     else:
                         kept_local.append(stem)
+                archive_labels += LS.labels_from_source(
+                    src_dir, [s for s in wanted if s in merged])
         finally:
             shutil.rmtree(scan_root, ignore_errors=True)
 
@@ -1126,6 +1137,7 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
             "merged_stems": merged_unique,
             "merged_count": len(merged_unique),
             "kept_local": sorted(set(kept_local)),
+            "archive_labels": list(dict.fromkeys(archive_labels)),
             **meta,
         })
 

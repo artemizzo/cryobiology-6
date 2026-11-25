@@ -1,3 +1,5 @@
+import { showToast } from "../util.js";
+import { filtered } from "../state.js";
 /**
  * zoompanMixin — спільний для обох табів zoom/pan + промальовка base canvas
  * (з overlay або з оригіналу) + перемикання background source.
@@ -32,29 +34,51 @@ export const zoompanMixin = {
     }
   },
 
-  // ── 🎥 Камера за курсором (клавіша F / кнопка в шапці) ─────────────────────────
-  // Увімкнено: точка під курсором плавно тягнеться до центру вікна — зображення
-  // «їде» в той бік, куди показує курсор (як джойстик). У центрі є «мертва зона»,
-  // щоб камера стояла, поки працюєш біля центру. Працює лише при наближенні
-  // (scale > 1) і не під час перетягування камери. Стан пам'ятається (localStorage).
-  _followIsOn() {
-    if (this._followOn === undefined) {
-      try { this._followOn = localStorage.getItem("mp.followCamera") === "1"; }
-      catch { this._followOn = false; }
+  // ── 🎥 Камера ─────────────────────────────────────────────────────────────────
+  // Режими (localStorage "mp.cameraMode"):
+  //   "edge"   — як у Dota: курсор біля краю вікна (смуга EDGE px) → зображення їде в
+  //              той бік; що ближче до краю — то швидше. Вмикається клавішею F / кнопкою 🎥.
+  //   "follow" — 🌀 ПАСХАЛКА (Alt+Shift+F, ніде в довідці): точка під курсором тягнеться до
+  //              центру — зображення постійно «пливе» за мишкою. Перша версія «камери», яка
+  //              мейнтейнеру здалась кумедною, тож лишилась схованою.
+  //   "off"    — вимкнено.
+  // Працює лише при наближенні (scale > 1) і не під час перетягування камери.
+  _camMode() {
+    if (this._camModeV === undefined) {
+      try { this._camModeV = localStorage.getItem("mp.cameraMode") || "off"; }
+      catch { this._camModeV = "off"; }
+      if (!["off", "edge", "follow"].includes(this._camModeV)) this._camModeV = "off";
     }
-    return this._followOn;
+    return this._camModeV;
   },
 
-  _followToggle() {
-    this._followOn = !this._followIsOn();
-    try { localStorage.setItem("mp.followCamera", this._followOn ? "1" : "0"); } catch { /* приватний режим */ }
+  _camSetMode(mode) {
+    this._camModeV = mode;
+    try { localStorage.setItem("mp.cameraMode", mode); } catch { /* приватний режим */ }
     this._followUpdateButton();
-    if (this._followOn) this._followKick();
+    if (mode !== "off") this._followKick();
+  },
+
+  // F / кнопка 🎥: камера біля краю екрана — увімк. / вимк.
+  _followToggle() {
+    this._camSetMode(this._camMode() === "edge" ? "off" : "edge");
+    showToast(this._camMode() === "edge"
+      ? "🎥 Камера біля краю: підведи курсор до краю — зображення поїде" : "🎥 Камера вимкнена", "ok", 1800);
+  },
+
+  // Alt+Shift+F — пасхалка 🌀.
+  _followEasterEgg() {
+    const on = this._camMode() !== "follow";
+    this._camSetMode(on ? "follow" : "off");
+    showToast(on ? "🌀 П'яна камера! (Alt+Shift+F — вимкнути)" : "🌀 Протверезіли", "ok", 2000);
   },
 
   _followUpdateButton() {
     const b = document.getElementById("editorFollowCam");
-    if (b) b.classList.toggle("btn--mini-active", this._followIsOn());
+    if (!b) return;
+    const m = this._camMode();
+    b.classList.toggle("btn--mini-active", m !== "off");
+    b.textContent = m === "follow" ? "🌀 F" : "🎥 F";
   },
 
   // Слухачі вішаються один раз (wrap живе весь час); стан редактора перевіряється в циклі.
@@ -71,25 +95,42 @@ export const zoompanMixin = {
     this._followUpdateButton();
   },
 
+  // Швидкість камери (px/с по x, y) для поточної позиції курсора.
+  _camVelocity(m, w, h) {
+    const mode = this._camMode();
+    if (mode === "edge") {
+      const EDGE = Math.max(30, Math.min(70, 0.07 * Math.min(w, h)));   // ширина смуги біля краю
+      const MAX = 1100;                                                  // px/с у самому краї
+      const k = (d) => (d < EDGE ? MAX * (1 - Math.max(0, d) / EDGE) : 0);
+      return { vx: k(m.x) - k(w - m.x), vy: k(m.y) - k(h - m.y) };      // курсор зліва → зображення вправо
+    }
+    if (mode === "follow") {
+      const dx = w / 2 - m.x, dy = h / 2 - m.y;
+      const dist = Math.hypot(dx, dy);
+      const dead = 0.12 * Math.min(w, h);
+      if (dist <= dead) return { vx: 0, vy: 0 };
+      const sp = 2.2 * (dist - dead);
+      return { vx: (dx / dist) * sp, vy: (dy / dist) * sp };
+    }
+    return { vx: 0, vy: 0 };
+  },
+
   _followKick() {
-    if (this._followRaf || !this._followIsOn()) return;
-    let last = performance.now();
+    if (this._followRaf || this._camMode() === "off") return;
+    let last = 0;
     const step = (now) => {
       this._followRaf = null;
       const s = this.state;
       const m = this._followMouse;
-      if (!this._followIsOn() || !s.open || !m || s.isPanning || s.scale <= 1.01) return;
+      if (this._camMode() === "off" || !s.open || !m || s.isPanning || s.scale <= 1.01) return;
       const wrap = this._wrap();
       const w = wrap.clientWidth, h = wrap.clientHeight;
-      const dx = w / 2 - m.x, dy = h / 2 - m.y;
-      const dist = Math.hypot(dx, dy);
-      const dead = 0.12 * Math.min(w, h);
-      if (dist <= dead) return;                   // курсор біля центру — камера стоїть
-      const dt = Math.min(50, now - last) / 1000; // с; захист від стрибка після паузи вкладки
+      const { vx, vy } = this._camVelocity(m, w, h);
+      if (!vx && !vy) return;                       // курсор не в зоні руху — камера стоїть
+      const dt = last ? Math.min(50, now - last) / 1000 : 1 / 60;
       last = now;
-      const speed = 2.2 * (dist - dead);          // px/с: що далі від центру — то швидше
-      let px = s.panX + (dx / dist) * speed * dt;
-      let py = s.panY + (dy / dist) * speed * dt;
+      let px = s.panX + vx * dt;
+      let py = s.panY + vy * dt;
       // Не відʼїжджати за межі фото: точка в центрі вікна лишається всередині зображення.
       px = Math.min(w / 2, Math.max(w / 2 - w * s.scale, px));
       py = Math.min(h / 2, Math.max(h / 2 - h * s.scale, py));
@@ -98,7 +139,56 @@ export const zoompanMixin = {
       this._applyZoomTransform();
       this._followRaf = requestAnimationFrame(step);
     };
-    this._followRaf = requestAnimationFrame((t) => { last = t - 16; step(t); });  // 1-й кадр ≈ 1/60 с
+    this._followRaf = requestAnimationFrame(step);
+  },
+
+  // ── Shift+Q / Shift+W — «підглянути» сусідній кадр ────────────────────────────
+  // Фон редактора перемикається на фото попереднього / наступного у списку (крок за
+  // кроком: ще Shift+W — +2 і т.д.), а полігони, вибір і інструмент лишаються від
+  // поточного фото → видно, як клітина виглядала до / після, не кидаючи розмітку.
+  // Shift з протилежного боку до 0 або Esc — назад до свого фото. Скидається при переході.
+  async _bgPeekStep(delta) {
+    const s = this.state;
+    if (!s.open) return;
+    const list = filtered();
+    const cur = list.findIndex((it) => it.stem === s.stem);
+    if (cur < 0) return;
+    const off = ((s.bgPeek && s.bgPeek.offset) || 0) + delta;
+    if (off === 0) { this._bgPeekClear(); return; }
+    const it = list[cur + off];
+    if (!it) { showToast(delta < 0 ? "Раніше кадрів нема" : "Далі кадрів нема", "warn", 1500); return; }
+    const token = (this._bgPeekToken = (this._bgPeekToken || 0) + 1);
+    s.bgPeek = { offset: off, stem: it.stem, img: (s.bgPeek && s.bgPeek.img) || null };
+    this._bgPeekBadge();
+    this._bgPeekCache = this._bgPeekCache || new Map();
+    let img = this._bgPeekCache.get(it.stem);
+    if (!img) {
+      try { img = await this._loadImage(`/api/image/${encodeURIComponent(it.stem)}`); }
+      catch { showToast(`Не вдалося завантажити ${it.stem}`, "err", 2500); return; }
+      if (this._bgPeekCache.size > 12) this._bgPeekCache.delete(this._bgPeekCache.keys().next().value);
+      this._bgPeekCache.set(it.stem, img);
+    }
+    if (token !== this._bgPeekToken || !s.bgPeek || s.stem !== this.state.stem) return;
+    s.bgPeek.img = img;
+    this._drawBase();
+  },
+
+  _bgPeekClear() {
+    const had = !!this.state.bgPeek;
+    this.state.bgPeek = null;
+    this._bgPeekToken = (this._bgPeekToken || 0) + 1;
+    this._bgPeekBadge();
+    if (had && this.state.open) this._drawBase();
+    return had;
+  },
+
+  _bgPeekBadge() {
+    const el = document.getElementById("editorBgPeek");
+    if (!el) return;
+    const p = this.state.bgPeek;
+    if (!p) { el.style.display = "none"; return; }
+    el.textContent = `👁 Фон: кадр ${p.offset > 0 ? "+" : "−"}${Math.abs(p.offset)} (${p.stem}) · полігони — цього фото · Esc — назад`;
+    el.style.display = "";
   },
 
   resetZoom() {
@@ -156,6 +246,9 @@ export const zoompanMixin = {
     // nearest-neighbor. _paintRejectedFromOriginal копіює 1:1, тож не страждає.
     ctx.imageSmoothingEnabled = true;
     ctx.clearRect(0, 0, W, H);
+    // Shift+Q/W: фон — фото сусіднього кадру (полігони лишаються від поточного).
+    const peek = this.state.bgPeek;
+    if (peek && peek.img) { ctx.drawImage(peek.img, 0, 0, W, H); return; }
     const wantOverlay = this._currentBgSource() === "overlay";
     const img = (wantOverlay && overlayImage) ? overlayImage : originalImage;
     if (img) ctx.drawImage(img, 0, 0, W, H);

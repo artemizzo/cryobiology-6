@@ -327,7 +327,7 @@ def prepare_task(
         if copy_file(data_dir / "groups" / f"{stem}.json", task_dir / "groups" / f"{stem}.json"):
             copied_groups += 1
 
-    for meta in ("labels.json", "group_classes.json", "tracks.json"):
+    for meta in ("labels.json", "group_classes.json", "tracks.json", "label_sets.json"):
         if (data_dir / meta).exists():
             copy_file(data_dir / meta, task_dir / meta)
     (task_dir / "selections.json").write_text(

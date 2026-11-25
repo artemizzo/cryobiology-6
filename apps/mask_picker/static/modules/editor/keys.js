@@ -7,7 +7,7 @@
  * у polygons. Решта — тулзи / undo/redo / save / esc / delete.
  */
 
-import { appLabels } from "../state.js";
+import { usableLabels } from "../state.js";
 import { setActiveLabel } from "../labels.js";
 import { openMultiSeedModal } from "../multiseed.js";
 
@@ -39,16 +39,33 @@ export const keysMixin = {
       if (!e.repeat) this.gotoPhoto(e.key === "PageUp" ? -1 : 1);
       return;
     }
+    // Shift+Q / Shift+W — фон сусіднього кадру, полігони лишаються (zoompan._bgPeekStep).
+    if (!ctrl && !e.altKey && e.shiftKey && (e.code === "KeyQ" || e.code === "KeyW")) {
+      e.preventDefault();
+      if (!e.repeat) this._bgPeekStep(e.code === "KeyQ" ? -1 : 1);
+      return;
+    }
     // Q / W — те саме лівою рукою (права зазвичай на мишці).
     if (!ctrl && !e.altKey && (e.code === "KeyQ" || e.code === "KeyW")) {
       e.preventDefault();
       if (!e.repeat) this.gotoPhoto(e.code === "KeyQ" ? -1 : 1);
       return;
     }
-    // F — 🎥 камера за курсором (увімк. / вимк.).
-    if (!ctrl && !e.altKey && e.code === "KeyF") {
+    // T — показати / сховати таймлайн.
+    if (!ctrl && !e.altKey && !e.shiftKey && e.code === "KeyT") {
+      e.preventDefault();
+      if (!e.repeat) this._tlToggle();
+      return;
+    }
+    // F — 🎥 камера біля краю екрана (як у Dota), увімк. / вимк.
+    if (!ctrl && !e.altKey && !e.shiftKey && e.code === "KeyF") {
       e.preventDefault();
       if (!e.repeat) this._followToggle();
+      return;
+    }
+    if (!ctrl && e.altKey && e.shiftKey && e.code === "KeyF") {   // 🌀 пасхалка, ніде не документована для юзера
+      e.preventDefault();
+      if (!e.repeat) this._followEasterEgg();
       return;
     }
     if (e.code === "KeyO") {
@@ -71,6 +88,7 @@ export const keysMixin = {
     }
     if (e.key === "Escape") {
       e.preventDefault();
+      if (this._bgPeekClear()) return;   // спершу — повернути свій фон (Shift+Q/W)
       const pg = this.state.polygons;
       if (this.state.activeTab === "groups" && this.state.groups.lasso) {
         this._onGroupsLassoCancel();
@@ -177,7 +195,8 @@ export const keysMixin = {
     if (digitMatch) {
       e.preventDefault();
       const n = parseInt(digitMatch[1], 10);
-      const lbl = appLabels.find((l) => l.shortcut === String(n)) || appLabels[n - 1];
+      const list = usableLabels(this.state.stem);   // лише класи набору цього фото
+      const lbl = list.find((l) => l.shortcut === String(n)) || list[n - 1];
       if (lbl) setActiveLabel(lbl.name);
       return;
     }

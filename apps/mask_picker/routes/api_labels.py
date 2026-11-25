@@ -11,6 +11,7 @@ from state import (
 )
 from polygons import _normalize_label_renames, _rename_labels_in_polygon_files
 from catalog import CatalogService
+import label_sets as LS
 
 
 def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> Blueprint:
@@ -68,6 +69,7 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
             return jsonify({"error": err}), 400
         try:
             result = _rename_labels_in_polygon_files(cfg.polygons_dir, renames or {})
+            result["label_sets_changed"] = LS.rename(cfg, renames or {})
         except Exception as e:
             return jsonify({"error": str(e)}), 500
         return jsonify({
@@ -75,5 +77,23 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
             "renamed": renames or {},
             **result,
         })
+
+    # Набори класів на фото (label_sets.py): які класи доступні в редакторі для фото.
+    @bp.route("/api/label-sets", methods=["GET"])
+    def api_label_sets_get():
+        return jsonify(LS.load(cfg))
+
+    @bp.route("/api/label-sets", methods=["POST"])
+    def api_label_sets_post():
+        body = request.get_json(silent=True) or {}
+        stems = body.get("stems")
+        labels = body.get("labels")
+        if not isinstance(stems, list) or not isinstance(labels, list):
+            return jsonify({"error": "очікується {stems: [...], labels: [...]}"}), 400
+        try:
+            res = LS.assign(cfg, stems, labels)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+        return jsonify({"ok": True, **res, "all_labels": _load_label_classes(cfg.labels_file)})
 
     return bp

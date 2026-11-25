@@ -475,7 +475,7 @@ async function _applyImportMerge() {
       if (reloadCatalogFn) await reloadCatalogFn(true);
       if (renderAllFn) renderAllFn();
       // Обов'язково: які класи розмічатимуть на цих фото (дописуються в labels.json).
-      await openImportLabelsModal();
+      await openImportLabelsModal({ stems: resp.merged_stems || [], prefill: resp.archive_labels || [] });
     } else {
       showToast(`Помилка імпорту: ${resp.error || "?"}`, "err", 6000);
     }

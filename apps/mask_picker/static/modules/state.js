@@ -19,6 +19,22 @@ export const state = {
 export let appLabels = [];
 export function setAppLabels(arr) { appLabels = arr; }
 
+// Набори класів на фото (label_sets.json, бекенд label_sets.py): stem → [назви].
+// Для фото з набором у редакторі доступні ЛИШЕ його класи (клавіші 1..N за порядком
+// набору); фото без набору (старі дані) — усі класи labels.json.
+export let stemLabelSets = {};
+export function setStemLabelSets(obj) { stemLabelSets = obj || {}; }
+export function usableLabels(stem) {
+  const names = stem && stemLabelSets[stem];
+  if (!names || !names.length) return appLabels;
+  const out = [];
+  names.forEach((n) => {
+    const l = appLabels.find((x) => x.name === n);
+    if (l) out.push({ ...l, shortcut: out.length < 9 ? String(out.length + 1) : "" });
+  });
+  return out.length ? out : appLabels;
+}
+
 export function filtered() {
   if (state.filter === "all") {
     return state.catalog.filter((it) => !(it.state && it.state.status === "excluded"));

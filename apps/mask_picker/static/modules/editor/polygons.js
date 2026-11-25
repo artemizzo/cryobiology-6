@@ -35,7 +35,7 @@ import {
   $, _hexToRgba, _pointInPoly, _projectPointOnSegment, showToast,
 } from "../util.js";
 import { api } from "../api.js";
-import { state, appLabels, getLabelColor, DEFAULT_LABEL, MANUAL_MODEL } from "../state.js";
+import { state, appLabels, usableLabels, getLabelColor, DEFAULT_LABEL, MANUAL_MODEL } from "../state.js";
 
 const FREEHAND_MIN_DIST = 15;          // px у image-space між точками freehand
 const VERTEX_CLICK_PX    = 10;         // поріг "клік по вершині" у CSS-пікселях
@@ -1035,15 +1035,16 @@ export const polygonsMixin = {
       return;
     }
 
-    const expected = appLabels.map((l) => l.name).join(",");
+    const labels = [...idxSet].map((i) => (pg.shapes[i] && pg.shapes[i].label) || DEFAULT_LABEL);
+    // Класи набору цього фото + (щоб не «загубити» показ) класи обраних полігонів поза набором.
+    const names = usableLabels(this.state.stem).map((l) => l.name);
+    for (const l of labels) if (!names.includes(l)) names.push(l);
+    const expected = names.join(",");
     if (sel.dataset.builtFor !== expected) {
-      sel.innerHTML = appLabels.map((l) =>
-        `<option value="${l.name}">${l.name}</option>`
-      ).join("");
+      sel.innerHTML = names.map((n) => `<option value="${n}">${n}</option>`).join("");
       sel.dataset.builtFor = expected;
     }
 
-    const labels = [...idxSet].map((i) => (pg.shapes[i] && pg.shapes[i].label) || DEFAULT_LABEL);
     const allSame = labels.every((l) => l === labels[0]);
     sel.value = allSame ? labels[0] : "";
     sel.title = idxSet.size > 1

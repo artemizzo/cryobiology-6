@@ -4,7 +4,7 @@
 
 import { $, closeModal, showToast } from "./util.js";
 import { api } from "./api.js";
-import { appLabels, setAppLabels, getLabelByName } from "./state.js";
+import { appLabels, setAppLabels, getLabelByName, usableLabels, stemLabelSets, setStemLabelSets } from "./state.js";
 
 let editorRef = null;
 export function setEditor(ed) { editorRef = ed; }
@@ -32,7 +32,7 @@ export function _buildLabelDropdown() {
   if (!dd) return;
   const activeLabel = editorRef && editorRef.state.polygons.activeLabel;
   dd.innerHTML = "";
-  appLabels.forEach((lbl) => {
+  usableLabels(editorRef && editorRef.state.stem).forEach((lbl) => {
     const item = document.createElement("div");
     item.className = "label-picker__item" +
       (lbl.name === activeLabel ? " label-picker__item--active" : "");
@@ -56,7 +56,7 @@ function _buildBaseChipDropdown() {
   if (!dd) return;
   const cur = editorRef && editorRef.state.baseLabel;
   dd.innerHTML = "";
-  appLabels.forEach((lbl) => {
+  usableLabels(editorRef && editorRef.state.stem).forEach((lbl) => {
     const item = document.createElement("div");
     item.className = "label-picker__item" +
       (lbl.name === cur ? " label-picker__item--active" : "");
@@ -174,6 +174,8 @@ export function saveLabels() {
         if (changed) { editorRef._polyMarkDirty(); editorRef._polyRedraw(); }
       }
       setAppLabels(newLabels);
+      // Перейменування міняє й набори класів фото (бекенд label_sets.rename) — перечитати.
+      if (renameMap.size > 0) api("/api/label-sets").then((r) => setStemLabelSets(r.stems)).catch(() => {});
       _modalLabels = [];
       const pg = editorRef && editorRef.state.polygons;
       const stillValid = appLabels.find((l) => l.name === (pg && pg.activeLabel));
@@ -303,41 +305,48 @@ export function bindEvents() {
 
 
 // ── Обов'язкове вікно «Класи для цих фото» після імпорту ─────────────────────────
-// Показує класи датасету (labels.json), дозволяє дописати нові (в КІНЕЦЬ — порядок
-// наявних = семантичний контракт, не чіпаємо). Promise завершується після «Готово».
-const _IMPORT_COLORS = ["#4488ff","#ff6644","#44cc88","#cc44ff","#ffcc44","#44ccff","#ff4488","#88cc44","#ff8844"];
-
-export function openImportLabelsModal() {
+// Рішення мейнтейнера: класи — на ВЕСЬ імпорт, і лише вони доступні для цих фото.
+// Список стартує порожнім (для архіву — класи з архіву для цих фото), старі класи з
+// попередніх імпортів НЕ підставляються (лише підказкою «раніше були», в 1 клік).
+// «Готово» → POST /api/label-sets (набір для імпортованих фото; нові назви бекенд
+// дописує в кінець labels.json — для bake). Promise завершується після «Готово».
+export function openImportLabelsModal({ stems = [], prefill = [] } = {}) {
   const modal = $("#importLabelsModal");
-  if (!modal) return Promise.resolve();
-  const added = [];               // нові класи з цього вікна (ще не збережені)
+  if (!modal || !stems.length) return Promise.resolve();
+  const chosen = [...new Set(prefill.filter(Boolean))];
   const input = $("#importLabelsInput");
   const chips = $("#importLabelsChips");
+  const hints = $("#importLabelsHints");
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const colorOf = (n) => (appLabels.find((l) => l.name === n) || {}).color || "#888";
 
-  const all = () => [...appLabels, ...added];
   const render = () => {
-    chips.innerHTML = all().map((l, i) => {
-      const isNew = i >= appLabels.length;
-      return `<span class="import-labels__chip${isNew ? " import-labels__chip--new" : ""}">
-        <i style="background:${esc(l.color)}"></i>${esc(l.name)}${l.shortcut ? ` <kbd>${esc(l.shortcut)}</kbd>` : ""}
-        ${isNew ? `<button data-rm="${i - appLabels.length}" title="Прибрати">×</button>` : ""}</span>`;
-    }).join("") || '<span class="muted">Класів ще нема — додай хоча б один.</span>';
+    chips.innerHTML = chosen.map((n, i) => `<span class="import-labels__chip import-labels__chip--new">
+        <i style="background:${esc(colorOf(n))}"></i>${esc(n)} <kbd>${i < 9 ? i + 1 : ""}</kbd>
+        <button data-rm="${i}" title="Прибрати">×</button></span>`).join("")
+      || '<span class="muted">Ще нема жодного класу — впиши хоча б один.</span>';
     chips.querySelectorAll("[data-rm]").forEach((b) => {
-      b.onclick = () => { added.splice(+b.dataset.rm, 1); render(); };
+      b.onclick = () => { chosen.splice(+b.dataset.rm, 1); render(); };
+    });
+    const old = appLabels.map((l) => l.name).filter((n) => !chosen.includes(n));
+    hints.innerHTML = old.length
+      ? `<span class="muted">Раніше були (клік — додати):</span> ` + old.map((n) =>
+          `<button class="import-labels__hint" data-add="${esc(n)}">${esc(n)}</button>`).join(" ")
+      : "";
+    hints.querySelectorAll("[data-add]").forEach((b) => {
+      b.onclick = () => { chosen.push(b.dataset.add); render(); };
     });
   };
   const addFromInput = () => {
     const names = (input.value || "").split(",").map((t) => t.trim()).filter(Boolean);
     for (const name of names) {
-      if (all().some((l) => l.name.toLowerCase() === name.toLowerCase())) {
-        showToast(`Клас «${name}» уже є`, "warn", 2000);
+      if (chosen.some((n) => n.toLowerCase() === name.toLowerCase())) {
+        showToast(`Клас «${name}» уже в списку`, "warn", 2000);
         continue;
       }
-      const n = all().length;
-      const used = new Set(all().map((l) => l.shortcut));
-      const sc = ["1","2","3","4","5","6","7","8","9"].find((d) => !used.has(d)) || "";
-      added.push({ id: `lbl_${Date.now()}_${n}`, name, color: _IMPORT_COLORS[n % _IMPORT_COLORS.length], shortcut: sc });
+      // та сама назва, що вже є в датасеті (інший регістр) → беремо наявну
+      const existing = appLabels.find((l) => l.name.toLowerCase() === name.toLowerCase());
+      chosen.push(existing ? existing.name : name);
     }
     input.value = "";
     render();
@@ -352,26 +361,27 @@ export function openImportLabelsModal() {
     };
     $("#importLabelsDone").onclick = async () => {
       if ((input.value || "").trim()) addFromInput();   // вписав, але не натиснув «Додати»
-      if (!all().length) { showToast("Потрібен хоча б один клас", "err", 2500); return; }
-      if (added.length) {
-        const btn = $("#importLabelsDone");
-        btn.disabled = true;
-        try {
-          const labels = all();
-          await api("/api/labels", { method: "POST", body: JSON.stringify(labels) });
-          setAppLabels(labels);
-          _buildLabelDropdown();
-          showToast(`✓ Додано класи: ${added.map((l) => l.name).join(", ")}`, "ok", 4000);
-        } catch (e) {
-          showToast(`Класи не збережено: ${e.message || e}`, "err", 5000);
-          return;
-        } finally {
-          btn.disabled = false;
-        }
+      if (!chosen.length) { showToast("Впиши хоча б один клас", "err", 2500); return; }
+      const btn = $("#importLabelsDone");
+      btn.disabled = true;
+      try {
+        const r = await api("/api/label-sets", { method: "POST", body: JSON.stringify({ stems, labels: chosen }) });
+        if (Array.isArray(r.all_labels)) setAppLabels(r.all_labels);
+        // перечитати всі набори: бекенд міг закріпити класи й за старими фото
+        try { setStemLabelSets((await api("/api/label-sets")).stems); }
+        catch { const sets = { ...stemLabelSets }; for (const st of stems) sets[st] = [...chosen]; setStemLabelSets(sets); }
+        _buildLabelDropdown();
+        showToast(`✓ Класи для ${stems.length} фото: ${chosen.join(", ")}`, "ok", 4000);
+      } catch (e) {
+        showToast(`Класи не збережено: ${e.message || e}`, "err", 5000);
+        return;
+      } finally {
+        btn.disabled = false;
       }
       modal.classList.remove("open");
       resolve();
     };
+    $("#importLabelsCount").textContent = `${stems.length} фото`;
     input.value = "";
     render();
     modal.classList.add("open");

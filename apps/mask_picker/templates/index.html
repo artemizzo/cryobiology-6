@@ -247,7 +247,9 @@
       <h3 style="margin-top:16px;">Редактор — усі вкладки</h3>
       <table class="shortcuts">
         <tr><td><kbd>Q</kbd> / <kbd>W</kbd>, ◀ / ▶, <kbd>PageUp</kbd> / <kbd>PageDown</kbd></td><td>Зберегти й відкрити попереднє / наступне фото (зум лишається; кілька швидких натискань — стрибок на кілька фото)</td></tr>
-        <tr><td><kbd>F</kbd> / 🎥 F</td><td>Камера за курсором: при наближенні зображення прокручується туди, куди ведеш мишку</td></tr>
+        <tr><td><kbd>Shift</kbd>+<kbd>Q</kbd> / <kbd>Shift</kbd>+<kbd>W</kbd></td><td>Фон — сусідній кадр, полігони лишаються свої (<kbd>Esc</kbd> — назад)</td></tr>
+        <tr><td><kbd>F</kbd> / 🎥 F</td><td>Камера біля краю (як у Dota): курсор до краю вікна — зображення їде туди</td></tr>
+        <tr><td><kbd>T</kbd> / 🎞 Таймлайн</td><td>Таймлайн кадрів серії і треків: клік — перейти, ◆◀ / ▶◆ — ключові кадри, ▶ — відтворити</td></tr>
         <tr><td><kbd>Tab</kbd></td><td>Наступна вкладка (Cleanup → Polygons → Groups)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Скасувати (і операції з треками: розділити / злити / видалити)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Повторити</td></tr>
@@ -318,16 +320,15 @@
   <div class="modal" id="importLabelsModal" data-required>
     <div class="modal__backdrop"></div>
     <div class="modal__content modal__content--labels">
-      <h2>Класи для цих фото</h2>
+      <h2>Класи для цих фото <span class="muted" id="importLabelsCount" style="font-size:14px"></span></h2>
       <p class="muted" style="margin:0 0 10px">Які класи (labels) розмічатимете на цих фото? Впиши назви —
-        вони з'являться в редакторі (клавіші 1–9). Класи спільні для всього датасету.</p>
+        <b>лише вони</b> будуть доступні в редакторі для цього імпорту (клавіші 1–9 — у такому порядку).</p>
       <div id="importLabelsChips" class="import-labels__chips"></div>
       <div class="import-labels__add">
         <input type="text" id="importLabelsInput" placeholder="назва класу, напр. nucleus (можна кілька через кому)" />
         <button id="importLabelsAdd" class="btn">+ Додати</button>
       </div>
-      <p class="muted" style="margin:8px 0 0;font-size:12px">Наявні класи тут не видаляються — перейменувати чи
-        видалити можна потім у <b>Labels</b> угорі.</p>
+      <div id="importLabelsHints" class="import-labels__hints"></div>
       <div class="labels-actions" style="margin-top:14px">
         <div style="flex:1"></div>
         <button id="importLabelsDone" class="btn btn--primary">✓ Готово</button>
@@ -411,11 +412,12 @@
           <button id="editorPrevPhoto" class="btn btn--mini">◀</button>
           <span id="editorPhotoPos" class="muted"></span>
           <button id="editorNextPhoto" class="btn btn--mini">▶</button>
-          <button id="editorFollowCam" class="btn btn--mini" title="Камера за курсором (F): при наближенні точка під курсором плавно їде до центру вікна — зображення саме прокручується туди, куди ведеш мишку">🎥 F</button>
+          <button id="editorFollowCam" class="btn btn--mini" title="Камера біля краю (F), як у Dota: при наближенні підведи курсор до краю вікна — зображення поїде в той бік">🎥 F</button>
         </div>
         <div class="cleanup__stats" id="cleanupStats">—</div>
       </div>
       <div class="cleanup__canvas-wrap" id="cleanupCanvasWrap">
+        <div id="editorBgPeek" class="editor__bgpeek" style="display:none"></div>
         <div class="cleanup__zoom" id="cleanupZoom">
           <canvas id="cleanupCanvasBase"   class="cleanup__canvas"></canvas>
           <canvas id="cleanupCanvasMarks"  class="cleanup__canvas cleanup__canvas--marks"></canvas>
@@ -442,6 +444,23 @@
             <path id="polygonLasso" class="polygon__lasso" d="" style="display:none" />
           </svg>
         </div>
+      </div>
+
+      <!-- ===== ТАЙМЛАЙН (як у CVAT): кадри серії + треки — editor/timeline.js ===== -->
+      <div class="timeline" id="editorTimeline">
+        <div class="timeline__bar">
+          <button id="tlToggle" class="btn btn--mini" title="Показати / сховати таймлайн (T)">🎞 Таймлайн</button>
+          <button id="tlFirst" class="btn btn--mini" title="Перший кадр серії">⏮</button>
+          <button id="tlPrevKey" class="btn btn--mini" title="Попередній ключовий кадр обраного треку">◆◀</button>
+          <button id="tlPlay" class="btn btn--mini" title="Відтворити кадри підряд / пауза">▶</button>
+          <button id="tlNextKey" class="btn btn--mini" title="Наступний ключовий кадр обраного треку">▶◆</button>
+          <button id="tlLast" class="btn btn--mini" title="Останній кадр серії">⏭</button>
+          <select id="tlSpeed" title="Швидкість відтворення">
+            <option value="2">2 к/с</option><option value="4">4 к/с</option><option value="8">8 к/с</option>
+          </select>
+          <span id="tlInfo" class="muted timeline__info"></span>
+        </div>
+        <div class="timeline__scroll" id="tlScroll"><canvas id="tlCanvas"></canvas></div>
       </div>
 
       <!-- ===== TOOLBAR: Cleanup ===== -->

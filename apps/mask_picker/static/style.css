@@ -901,3 +901,28 @@ kbd {
 .import-labels__chip--new { border-color: var(--accent); }
 .import-labels__add { display: flex; gap: 6px; }
 .import-labels__add input { flex: 1; }
+.import-labels__hints { margin-top: 10px; font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.import-labels__hint {
+  background: none; border: 1px dashed var(--border); color: var(--fg-dim);
+  border-radius: 12px; padding: 1px 8px; cursor: pointer; font-size: 12px;
+}
+.import-labels__hint:hover { color: var(--fg, #fff); border-color: var(--accent); }
+
+/* Shift+Q/W — фон сусіднього кадру під полігонами поточного фото */
+.editor__bgpeek {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 20;
+  background: rgba(230, 150, 30, 0.92); color: #1a1205; font-size: 12px; font-weight: 600;
+  padding: 4px 12px; border-radius: 12px; pointer-events: none; white-space: nowrap;
+}
+
+/* Таймлайн (editor/timeline.js) */
+.timeline { margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: rgba(255,255,255,0.02); }
+.timeline__bar { display: flex; align-items: center; gap: 4px; padding: 3px 6px; font-size: 12px; }
+.timeline__bar select { font-size: 11px; padding: 1px 2px; }
+.timeline__info { margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.timeline__scroll { overflow: auto; max-height: 150px; }
+.timeline__scroll canvas { display: block; cursor: pointer; }
+.timeline--collapsed .timeline__scroll,
+.timeline--collapsed #tlFirst, .timeline--collapsed #tlPrevKey, .timeline--collapsed #tlPlay,
+.timeline--collapsed #tlNextKey, .timeline--collapsed #tlLast, .timeline--collapsed #tlSpeed,
+.timeline--collapsed .timeline__info { display: none; }

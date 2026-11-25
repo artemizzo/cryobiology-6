@@ -235,3 +235,22 @@ def test_undo_server_ops(ws):
     assert all(track_shape(cfg, s, 4) is None for s in FR)
     client.post("/api/tracks/undo", json={"undo_id": r["undo_id"]})
     assert {s: shapes_of(cfg, s) for s in FR} == before
+
+
+def test_timeline_endpoint(ws):
+    """/api/timeline/<stem>: кадри серії по порядку, к-сть полігонів, клітинки треку k/v/o/''."""
+    client, cfg, st = ws
+    save(client, FR[2], [tshape(SQ(10, 10), 7), {"label": "nucleus", "points": SQ(100, 100),
+                                                  "shape_type": "polygon", "group_id": None, "flags": {}}])
+    save(client, FR[5], [tshape(SQ(40, 40), 7), *[s for s in shapes_of(cfg, FR[5])
+                                                    if (s.get("flags") or {}).get("track_id") != 7]])
+    save(client, FR[7], [])                         # трек зник на кадрі 8 → outside
+    r = client.get(f"/api/timeline/{FR[4]}").get_json()
+    assert r["ok"] and r["series"] == "seq_1_"
+    assert [f["stem"] for f in r["frames"]] == FR and [f["num"] for f in r["frames"]] == list(range(1, 11))
+    assert r["frames"][2]["polygons"] == 2 and r["frames"][2]["tracked"] == 1
+    row = next(t for t in r["tracks"] if t["id"] == 7)
+    assert row["cells"] == ["", "", "k", "v", "v", "k", "v", "o", "", ""]
+    # фото без серії — один кадр, без треків інших серій
+    r2 = client.get("/api/timeline/other").get_json()
+    assert [f["stem"] for f in r2["frames"]] == ["other"] and r2["tracks"] == []

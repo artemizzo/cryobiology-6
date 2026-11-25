@@ -17,7 +17,7 @@
 
 import { $, $$, closeModal } from "./modules/util.js";
 import { api } from "./modules/api.js";
-import { state, appLabels, setAppLabels, MANUAL_MODEL } from "./modules/state.js";
+import { state, appLabels, setAppLabels, setStemLabelSets, MANUAL_MODEL } from "./modules/state.js";
 import { openZoom, quitApp } from "./modules/zoom_modal.js";
 import { openStats } from "./modules/stats.js";
 import {
@@ -86,6 +86,7 @@ async function init() {
   setAppLabels((state.config.labels && state.config.labels.length)
     ? state.config.labels
     : [{ id: 1, name: "nucleus", color: "#4488ff", shortcut: "1" }]);
+  try { setStemLabelSets((await api("/api/label-sets")).stems); } catch { /* старий бекенд */ }
   setActiveLabel(appLabels[0].name);
 
   await reloadCatalog();

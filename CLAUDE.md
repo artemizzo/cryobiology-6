@@ -31,7 +31,7 @@ python apps/segmentation/run_segmentation.py --data-dir data/<dataset>   # кр�
 python apps/mask_picker/app.py --workspace data/<dataset>                # крок 2 → http://127.0.0.1:5000
 python tools/launchers/bake_all.py --data-dir data/<dataset> --pack      # deliverable
 python tools/make_sandbox.py                                             # безпечна копія датасету для експериментів
-cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 254 passed)
+cd apps/mask_picker && MPLBACKEND=Agg python -m pytest tests/ -q         # тести (очікувано 259 passed)
 ```
 
 ### Docker (основний спосіб запуску для користувача)
@@ -77,7 +77,7 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   (onion skin, `ghost.js`, `06`§11; копіювання з тіні — у 🎯 Pick) + чіткість ліній/точок при зумі (`06`§12)
   → треки між кадрами серії як у CVAT (`17_TRACKS.md`) → ◀/▶ між фото в шапці редактора (`editor.gotoPhoto`,
   PageUp/PageDown) + фікс F-019 (× закривав без збереження, Esc не закривав — з оригінальної версії) → фіксоване місце ◀/▶,
-  «📎 До треку…», Ctrl+Z для split/merge/delete треку (серверні знімки), `docs/HOTKEYS.md` (+ довідка «?» в програмі) → ярлик завжди перезбирає, статика без кешу (`SEND_FILE_MAX_AGE_DEFAULT=0`), назва в шапці редактора стискається. → Q/W між фото, стрибок на кілька фото, зум/камера зберігаються, без затемнення, 🎥 F камера за курсором (`06`§13), обов'язкове вікно класів після імпорту (`16`§4). exe-лаунчер — НЕ робити (рішення: лишається Docker + ярлик). Інструкція для людей по ручному режиму й карта збереження
+  «📎 До треку…», Ctrl+Z для split/merge/delete треку (серверні знімки), `docs/HOTKEYS.md` (+ довідка «?» в програмі) → ярлик завжди перезбирає, статика без кешу (`SEND_FILE_MAX_AGE_DEFAULT=0`), назва в шапці редактора стискається. → Q/W між фото, стрибок на кілька фото, зум/камера зберігаються, без затемнення, 🎥 F камера за курсором (`06`§13), обов'язкове вікно класів після імпорту (`16`§4) → камера біля краю як у Dota (F; стара «за курсором» — 🌀 пасхалка Alt+Shift+F, не документувати для юзера), Shift+Q/W фон сусіднього кадру (`06`§13), класи НА ІМПОРТ (`label_sets.py`, `label_sets.json`, `16`§4), таймлайн як у CVAT (`editor/timeline.js`, `/api/timeline`, `17`§7). exe-лаунчер — НЕ робити (рішення: лишається Docker + ярлик). Інструкція для людей по ручному режиму й карта збереження
   даних — `README.md` §«Ручна розмітка». Відкриті ідеї: імпорт зовнішніх форматів розмітки (COCO/CVAT),
   native-діалоги вибору папки в Docker (`15`§6), попередження при bake про клас поза labels.json (F-016).
 - **Встановлення в команди (5 студентів, Docker лишається — рішення 2026-11-22):** інструкція `TEAM.md` + PDF
@@ -105,6 +105,9 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   workspace додавати і в експорт, і в Split (`make_annotation_task.py`), і в імпорт.
 - **SVG редактора і зум:** товщина ліній — `calc(Npx * var(--zinv, 1))`, радіус точок — `_polyVertexR()`;
   `will-change` лише під час зуму (`06`§12). Нові SVG-елементи робити так само, інакше пікселі при наближенні.
+- **Класи на фото** (`label_sets.py`, `16`§4): у редакторі класи брати через `state.usableLabels(stem)`, НЕ `appLabels`
+  напряму (інакше покажуться класи інших імпортів). `labels.json` — глобальний реєстр для bake; новий файл метаданих
+  `label_sets.json` уже в експорті / Split / імпорті.
 - **Треки** (`tracks.py`, `17`): SoT — `tracks.json`; на кадрах — звичайні полігони з `flags.track_id/keyframe`.
   Синхронізація в КОЖНОМУ `POST /api/polygons/<stem>` (`sync_frame`). Полігон треку на кадрі оновлювати НА
   МІСЦІ (індекс), видалення — з ремапом `groups polygon_indices`. Новий код, що пише polygons.json кадру в

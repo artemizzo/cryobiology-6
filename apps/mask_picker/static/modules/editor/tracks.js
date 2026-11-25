@@ -46,6 +46,7 @@ export const tracksMixin = {
     for (const id of ["#trackOutside", "#trackSplit", "#trackMerge", "#trackDelete"]) {
       show(id, !!cur && cur.tid !== null);
     }
+    if (this._timelineDraw && this._tl) this._timelineDraw();   // підсвітити рядок обраного треку
     const lbl = $("#trackSelected");
     if (lbl) {
       lbl.style.display = cur && cur.tid !== null ? "" : "none";
@@ -55,6 +56,10 @@ export const tracksMixin = {
 
   // Відповідь сервера на збереження кадру / операцію з треком → каталог + повідомлення.
   _tracksApplyServerResult(res, verb) {
+    // Таймлайн: полігони / треки кадру змінились → перечитати (з невеликою паузою —
+    // autosave може йти серіями).
+    clearTimeout(this._tlRefreshT);
+    this._tlRefreshT = setTimeout(() => this._timelineRefresh && this._timelineRefresh(), 250);
     if (!res || res.error) {
       if (res && res.error) showToast(`Треки: ${res.error}`, "err", 5000);
       return;

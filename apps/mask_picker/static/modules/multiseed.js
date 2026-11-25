@@ -5,7 +5,7 @@
 
 import { $, showToast } from "./util.js";
 import { api } from "./api.js";
-import { state, appLabels, DEFAULT_LABEL, MANUAL_MODEL } from "./state.js";
+import { state, appLabels, usableLabels, DEFAULT_LABEL, MANUAL_MODEL } from "./state.js";
 
 let editorRef = null;
 export function setEditor(ed) { editorRef = ed; }
@@ -43,7 +43,7 @@ export function openMultiSeedModal() {
   // per-label, не checked-state (так само як перед v2.0.0).
   const activeModel = editorRef.state.model === MANUAL_MODEL ? "" : (editorRef.state.model || "");
   tbody.innerHTML = "";
-  appLabels.forEach((lbl) => {
+  usableLabels(editorRef.state.stem).forEach((lbl) => {
     const tr = document.createElement("tr");
     let pref = prefs[lbl.name];
     if (pref == null || pref === "") {

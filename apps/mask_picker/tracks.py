@@ -499,6 +499,57 @@ def delete_track(cfg: Config, state: StateStore, tid: str) -> dict:
 # Експорт: MOT (одна таблиця на серію)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Таймлайн (як у CVAT): кадри серії + смуги треків
+# ---------------------------------------------------------------------------
+
+def _cell(track: dict, order: dict, stem: str) -> str:
+    """Клітинка таймлайна: 'k' ключовий кадр, 'o' outside-ключ, 'v' видно (копія /
+    інтерполяція), '' — трека на кадрі нема. Без обчислення контурів (дешево)."""
+    kfs = track.get("keyframes") or {}
+    if stem in kfs:
+        return "o" if kfs[stem].get("outside") else "k"
+    f = order[stem]
+    prev = None
+    for s, kf in kfs.items():
+        if s in order and order[s] < f and (prev is None or order[s] > order[prev[0]]):
+            prev = (s, kf)
+    return "v" if prev is not None and not prev[1].get("outside") else ""
+
+
+def timeline(cfg: Config, state: StateStore, stem: str) -> dict:
+    """Дані таймлайна для серії фото `stem`: кадри (к-сть полігонів, стан) і рядки треків."""
+    series, _ = series_of(stem)
+    frames = series_frames(cfg, series) or [stem]
+    if stem not in frames:
+        frames = [stem]
+    order = {s: i for i, s in enumerate(frames)}
+    out_frames = []
+    for s in frames:
+        n = nt = 0
+        p = _polygons_path(cfg.polygons_dir, s) if cfg.polygons_dir else None
+        if p is not None and p.exists():
+            try:
+                shapes = json.loads(p.read_text(encoding="utf-8")).get("shapes") or []
+                n = len(shapes)
+                nt = sum(1 for sh in shapes if (sh.get("flags") or {}).get("track_id") is not None)
+            except Exception:
+                pass
+        st = state.get(s) or {}
+        out_frames.append({"stem": s, "num": series_of(s)[1], "polygons": n, "tracked": nt,
+                           "status": st.get("status") or "", "dirty": bool(st.get("dirty"))})
+    rows = []
+    with _LOCK:
+        data = load_tracks(cfg)
+    for tid, tr in sorted(data["tracks"].items(), key=lambda kv: int(kv[0])):
+        if tr.get("series") != series:
+            continue
+        cells = [_cell(tr, order, s) for s in frames]
+        if any(cells):
+            rows.append({"id": int(tid), "label": tr.get("label"), "cells": cells})
+    return {"series": series, "frames": out_frames, "tracks": rows}
+
+
 def mot_lines(cfg: Config, stems: Optional[set] = None) -> dict[str, list[str]]:
     """
     MOT-формат з матеріалізованих полігонів: `кадр,трек,x,y,w,h,1,-1,-1,-1`
