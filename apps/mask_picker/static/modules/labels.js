@@ -300,3 +300,81 @@ export function bindEvents() {
     }
   }, true);
 }
+
+
+// ── Обов'язкове вікно «Класи для цих фото» після імпорту ─────────────────────────
+// Показує класи датасету (labels.json), дозволяє дописати нові (в КІНЕЦЬ — порядок
+// наявних = семантичний контракт, не чіпаємо). Promise завершується після «Готово».
+const _IMPORT_COLORS = ["#4488ff","#ff6644","#44cc88","#cc44ff","#ffcc44","#44ccff","#ff4488","#88cc44","#ff8844"];
+
+export function openImportLabelsModal() {
+  const modal = $("#importLabelsModal");
+  if (!modal) return Promise.resolve();
+  const added = [];               // нові класи з цього вікна (ще не збережені)
+  const input = $("#importLabelsInput");
+  const chips = $("#importLabelsChips");
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  const all = () => [...appLabels, ...added];
+  const render = () => {
+    chips.innerHTML = all().map((l, i) => {
+      const isNew = i >= appLabels.length;
+      return `<span class="import-labels__chip${isNew ? " import-labels__chip--new" : ""}">
+        <i style="background:${esc(l.color)}"></i>${esc(l.name)}${l.shortcut ? ` <kbd>${esc(l.shortcut)}</kbd>` : ""}
+        ${isNew ? `<button data-rm="${i - appLabels.length}" title="Прибрати">×</button>` : ""}</span>`;
+    }).join("") || '<span class="muted">Класів ще нема — додай хоча б один.</span>';
+    chips.querySelectorAll("[data-rm]").forEach((b) => {
+      b.onclick = () => { added.splice(+b.dataset.rm, 1); render(); };
+    });
+  };
+  const addFromInput = () => {
+    const names = (input.value || "").split(",").map((t) => t.trim()).filter(Boolean);
+    for (const name of names) {
+      if (all().some((l) => l.name.toLowerCase() === name.toLowerCase())) {
+        showToast(`Клас «${name}» уже є`, "warn", 2000);
+        continue;
+      }
+      const n = all().length;
+      const used = new Set(all().map((l) => l.shortcut));
+      const sc = ["1","2","3","4","5","6","7","8","9"].find((d) => !used.has(d)) || "";
+      added.push({ id: `lbl_${Date.now()}_${n}`, name, color: _IMPORT_COLORS[n % _IMPORT_COLORS.length], shortcut: sc });
+    }
+    input.value = "";
+    render();
+    input.focus();
+  };
+
+  return new Promise((resolve) => {
+    $("#importLabelsAdd").onclick = addFromInput;
+    input.onkeydown = (e) => {
+      e.stopPropagation();          // не віддавати літери гарячим клавішам каталогу
+      if (e.key === "Enter") { e.preventDefault(); addFromInput(); }
+    };
+    $("#importLabelsDone").onclick = async () => {
+      if ((input.value || "").trim()) addFromInput();   // вписав, але не натиснув «Додати»
+      if (!all().length) { showToast("Потрібен хоча б один клас", "err", 2500); return; }
+      if (added.length) {
+        const btn = $("#importLabelsDone");
+        btn.disabled = true;
+        try {
+          const labels = all();
+          await api("/api/labels", { method: "POST", body: JSON.stringify(labels) });
+          setAppLabels(labels);
+          _buildLabelDropdown();
+          showToast(`✓ Додано класи: ${added.map((l) => l.name).join(", ")}`, "ok", 4000);
+        } catch (e) {
+          showToast(`Класи не збережено: ${e.message || e}`, "err", 5000);
+          return;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+      modal.classList.remove("open");
+      resolve();
+    };
+    input.value = "";
+    render();
+    modal.classList.add("open");
+    setTimeout(() => input.focus(), 50);
+  });
+}

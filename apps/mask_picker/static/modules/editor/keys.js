@@ -39,6 +39,18 @@ export const keysMixin = {
       if (!e.repeat) this.gotoPhoto(e.key === "PageUp" ? -1 : 1);
       return;
     }
+    // Q / W — те саме лівою рукою (права зазвичай на мишці).
+    if (!ctrl && !e.altKey && (e.code === "KeyQ" || e.code === "KeyW")) {
+      e.preventDefault();
+      if (!e.repeat) this.gotoPhoto(e.code === "KeyQ" ? -1 : 1);
+      return;
+    }
+    // F — 🎥 камера за курсором (увімк. / вимк.).
+    if (!ctrl && !e.altKey && e.code === "KeyF") {
+      e.preventDefault();
+      if (!e.repeat) this._followToggle();
+      return;
+    }
     if (e.code === "KeyO") {
       if (e.repeat) { e.preventDefault(); return; }
       e.preventDefault();

@@ -32,6 +32,75 @@ export const zoompanMixin = {
     }
   },
 
+  // ── 🎥 Камера за курсором (клавіша F / кнопка в шапці) ─────────────────────────
+  // Увімкнено: точка під курсором плавно тягнеться до центру вікна — зображення
+  // «їде» в той бік, куди показує курсор (як джойстик). У центрі є «мертва зона»,
+  // щоб камера стояла, поки працюєш біля центру. Працює лише при наближенні
+  // (scale > 1) і не під час перетягування камери. Стан пам'ятається (localStorage).
+  _followIsOn() {
+    if (this._followOn === undefined) {
+      try { this._followOn = localStorage.getItem("mp.followCamera") === "1"; }
+      catch { this._followOn = false; }
+    }
+    return this._followOn;
+  },
+
+  _followToggle() {
+    this._followOn = !this._followIsOn();
+    try { localStorage.setItem("mp.followCamera", this._followOn ? "1" : "0"); } catch { /* приватний режим */ }
+    this._followUpdateButton();
+    if (this._followOn) this._followKick();
+  },
+
+  _followUpdateButton() {
+    const b = document.getElementById("editorFollowCam");
+    if (b) b.classList.toggle("btn--mini-active", this._followIsOn());
+  },
+
+  // Слухачі вішаються один раз (wrap живе весь час); стан редактора перевіряється в циклі.
+  _followInit() {
+    if (this._followInited) return;
+    this._followInited = true;
+    const wrap = this._wrap();
+    wrap.addEventListener("mousemove", (e) => {
+      const r = wrap.getBoundingClientRect();
+      this._followMouse = { x: e.clientX - r.left, y: e.clientY - r.top };
+      this._followKick();
+    });
+    wrap.addEventListener("mouseleave", () => { this._followMouse = null; });
+    this._followUpdateButton();
+  },
+
+  _followKick() {
+    if (this._followRaf || !this._followIsOn()) return;
+    let last = performance.now();
+    const step = (now) => {
+      this._followRaf = null;
+      const s = this.state;
+      const m = this._followMouse;
+      if (!this._followIsOn() || !s.open || !m || s.isPanning || s.scale <= 1.01) return;
+      const wrap = this._wrap();
+      const w = wrap.clientWidth, h = wrap.clientHeight;
+      const dx = w / 2 - m.x, dy = h / 2 - m.y;
+      const dist = Math.hypot(dx, dy);
+      const dead = 0.12 * Math.min(w, h);
+      if (dist <= dead) return;                   // курсор біля центру — камера стоїть
+      const dt = Math.min(50, now - last) / 1000; // с; захист від стрибка після паузи вкладки
+      last = now;
+      const speed = 2.2 * (dist - dead);          // px/с: що далі від центру — то швидше
+      let px = s.panX + (dx / dist) * speed * dt;
+      let py = s.panY + (dy / dist) * speed * dt;
+      // Не відʼїжджати за межі фото: точка в центрі вікна лишається всередині зображення.
+      px = Math.min(w / 2, Math.max(w / 2 - w * s.scale, px));
+      py = Math.min(h / 2, Math.max(h / 2 - h * s.scale, py));
+      if (px === s.panX && py === s.panY) return;
+      s.panX = px; s.panY = py;
+      this._applyZoomTransform();
+      this._followRaf = requestAnimationFrame(step);
+    };
+    this._followRaf = requestAnimationFrame((t) => { last = t - 16; step(t); });  // 1-й кадр ≈ 1/60 с
+  },
+
   resetZoom() {
     this.state.scale = 1; this.state.panX = 0; this.state.panY = 0;
     this._applyZoomTransform();

@@ -20,7 +20,9 @@ export function fmtTime(iso) {
   } catch { return iso; }
 }
 
-export function closeModal(m) { m.classList.remove("open"); }
+// Вікна з data-required (напр. «Класи для цих фото» після імпорту) закриваються лише
+// своєю кнопкою — не Esc і не кліком повз.
+export function closeModal(m) { if (m.hasAttribute("data-required")) return; m.classList.remove("open"); }
 
 export function _pointInPoly(x, y, points) {
   let inside = false;

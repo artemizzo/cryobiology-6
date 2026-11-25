@@ -5,7 +5,7 @@
 import { $, showToast } from "./util.js";
 import { api } from "./api.js";
 import { state, currentItem, setAppLabels } from "./state.js";
-import { _buildLabelDropdown } from "./labels.js";
+import { _buildLabelDropdown, openImportLabelsModal } from "./labels.js";
 
 let editorRef = null;
 let reloadCatalogFn = null;
@@ -474,6 +474,8 @@ async function _applyImportMerge() {
       $("#importMergeModal").classList.remove("open");
       if (reloadCatalogFn) await reloadCatalogFn(true);
       if (renderAllFn) renderAllFn();
+      // Обов'язково: які класи розмічатимуть на цих фото (дописуються в labels.json).
+      await openImportLabelsModal();
     } else {
       showToast(`Помилка імпорту: ${resp.error || "?"}`, "err", 6000);
     }

@@ -888,3 +888,16 @@ kbd {
 .group-classes-table .gc-hue-slider {
   width: 70px; height: 6px; vertical-align: middle;
 }
+
+/* Вікно «Класи для цих фото» (після імпорту) */
+.import-labels__chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+.import-labels__chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px;
+  border: 1px solid var(--border); border-radius: 14px; font-size: 13px;
+}
+.import-labels__chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.import-labels__chip kbd { font-size: 10px; }
+.import-labels__chip button { background: none; border: 0; color: var(--fg-dim); cursor: pointer; padding: 0 2px; }
+.import-labels__chip--new { border-color: var(--accent); }
+.import-labels__add { display: flex; gap: 6px; }
+.import-labels__add input { flex: 1; }

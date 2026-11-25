@@ -43,7 +43,7 @@ import {
   appLabels, currentItem, filtered,
   DEFAULT_LABEL, state as appState,
 } from "../state.js";
-import { renderAll, next as catalogNext, prev as catalogPrev, selectModel } from "../catalog.js";
+import { renderAll, goto as catalogGoto, selectModel } from "../catalog.js";
 import { _clearPolygonsCache } from "../polyoverlay.js";
 
 import { tabsMixin } from "./tabs.js";
@@ -210,9 +210,15 @@ export const editor = {
   //                              OPEN / CLOSE
   // =================================================================
 
+  // Повертає true, якщо фото відкрито повністю; false — якщо відкриття перервано новим
+  // переходом (gotoPhoto: швидке «перестрибування» кількох фото, див. _openSeq).
   async open(modelName, opts = {}) {
     const it = currentItem();
-    if (!it) return;
+    if (!it) return false;
+    // Кожен open має свій номер; gotoPhoto збільшує _openSeq, щоб перервати незавершене
+    // завантаження фото, яке юзер уже «перестрибнув». Після кожного await — перевірка.
+    const seq = (this._openSeq = (this._openSeq || 0) + 1);
+    const stale = () => seq !== this._openSeq;
     if (this.state.open) {
       if (this.state.stem === it.stem) {
         if (modelName && modelName !== this.state.model) {
@@ -221,7 +227,7 @@ export const editor = {
           await this._reloadCleanupData();
         }
         if (opts.tab) this.switchTab(opts.tab);
-        return;
+        return true;
       }
       await this.close();
     }
@@ -235,7 +241,9 @@ export const editor = {
     s.baseLabel = (it.state && it.state.base_label)
       || (appLabels[0] && appLabels[0].name)
       || DEFAULT_LABEL;
-    s.scale = 1; s.panX = 0; s.panY = 0;
+    // Перехід ◀/▶ (opts.view): зум і положення камери лишаються як на попередньому фото.
+    if (opts.view) { s.scale = opts.view.scale; s.panX = opts.view.panX; s.panY = opts.view.panY; }
+    else { s.scale = 1; s.panX = 0; s.panY = 0; }
     s.isPanning = false; s.spaceDown = false;
     s.bgPreviewPrev = null;
     this._historyClear();   // новий стем = свіжа історія (global undo/redo)
@@ -281,6 +289,13 @@ export const editor = {
     this._renderTabs();
     this._updateTitle();
     $("#cleanupStats").textContent = "завантаження…";
+    // Розмітка попереднього фото не повинна «висіти» над новим, поки воно вантажиться
+    // (при ◀/▶ вікно редактора не закривається — див. _navKeepModal у close()).
+    for (const l of [this._layerShapes(), this._layerVertices(), this._layerDraft(),
+                     this._layerGhost(), this._layerMarkers()]) {
+      if (l) l.replaceChildren();
+    }
+    { const cm = this._cMarks(); cm.getContext("2d").clearRect(0, 0, cm.width, cm.height); }
     this._modal().classList.add("open");
     this._bindEvents();
 
@@ -291,26 +306,30 @@ export const editor = {
           ? this._loadImage(`/api/overlay/${encodeURIComponent(s.model)}/${encodeURIComponent(s.stem)}`).catch(() => null)
           : Promise.resolve(null),
       ]);
+      if (stale()) return false;
       s.originalImage = origImg;
       s.overlayImage = ovImg;
 
       s.W = origImg.naturalWidth;
       s.H = origImg.naturalHeight;
 
+      // Одразу показати нове фото (раніше полотно було чорним, поки вантажились
+      // маска / полігони / групи — «затемнення» при переході між фото).
+      this._sizeCanvases(s.W, s.H);
+      this._svg().setAttribute("viewBox", `0 0 ${s.W} ${s.H}`);
+      this._drawBase();
+
       if (s.model) {
         await this._reloadCleanupData();
+        if (stale()) return false;
       }
 
       await this._loadPolygons();
+      if (stale()) return false;
       await this._groupsLoad();
+      if (stale()) return false;
 
-      if (cu.labelsInt32) {
-        // cleanup-маска вже встановила W/H — не міняти.
-      } else {
-        for (const c of [this._cBase(), this._cMarks(), this._cHit()]) {
-          c.width = s.W; c.height = s.H;
-        }
-      }
+      if (!cu.labelsInt32) this._sizeCanvases(s.W, s.H);  // cleanup-маска вже встановила W/H
 
       const svg = this._svg();
       svg.setAttribute("viewBox", `0 0 ${s.W} ${s.H}`);
@@ -321,10 +340,22 @@ export const editor = {
       this._updateStats();
       this._updateHint();
       this._ghostOnOpen();   // тінь сусідніх фото (async; W/H уже відомі)
+      return true;
     } catch (e) {
+      if (stale()) return false;
       showToast(`Editor: ${e.message}`, "err", 4000);
       console.error(e);
       await this.close(true);
+      return false;
+    }
+  },
+
+  // Розмір canvas-ів. Присвоєння width (навіть того самого) ОЧИЩУЄ canvas → базу
+  // (фото) не чіпаємо, якщо розмір не змінився: вона вже намальована.
+  _sizeCanvases(W, H) {
+    for (const c of [this._cBase(), this._cMarks(), this._cHit()]) {
+      if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+      else if (c !== this._cBase()) c.getContext("2d").clearRect(0, 0, W, H);
     }
   },
 
@@ -342,10 +373,10 @@ export const editor = {
         return;
       }
       const [H, W] = meta.shape;
+      const resized = s.W !== W || s.H !== H;
       s.W = W; s.H = H;
-      for (const c of [this._cBase(), this._cMarks(), this._cHit()]) {
-        c.width = W; c.height = H;
-      }
+      this._sizeCanvases(W, H);
+      if (resized) this._drawBase();
       const svg = this._svg();
       svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
@@ -443,33 +474,65 @@ export const editor = {
     });
   },
 
-  // ◀ / ▶ у шапці редактора (PageUp / PageDown): зберегти й закрити це фото,
-  // перейти до сусіднього у списку і відкрити його на ТІЙ САМІЙ вкладці. Якщо в
-  // сусіднього фото ще нема обраного варіанта, а поточний (напр. «manual»)
+  // ◀ / ▶ у шапці редактора (PageUp / PageDown, Q / W): зберегти це фото й відкрити
+  // сусіднє у списку на ТІЙ САМІЙ вкладці, з тим самим зумом і положенням камери.
+  // Якщо в сусіднього фото ще нема обраного варіанта, а поточний (напр. «manual»)
   // доступний — обрати його, щоб одразу розмічати далі.
-  async gotoPhoto(delta) {
-    if (this._navBusy) return;
+  // Швидкі повторні натискання накопичуються (_navTarget): фото, яке ще вантажиться,
+  // перериваємо (_openSeq) і одразу йдемо до кінцевого — можна «перестрибнути» кілька.
+  gotoPhoto(delta) {
     const list = filtered();
-    const target = appState.idx + delta;
+    const from = this._navTarget ?? appState.idx;
+    const target = from + delta;
     if (target < 0 || target >= list.length) {
       showToast(delta < 0 ? "Це перше фото у списку" : "Це останнє фото у списку", "warn", 1800);
       return;
     }
-    this._navBusy = true;
-    try {
-      const tab = this.state.activeTab;
-      const curModel = this.state.model;
-      await (delta > 0 ? catalogNext() : catalogPrev());   // flush + close редактора
-      const it = currentItem();
-      if (!it) return;
-      let model = it.state && it.state.status === "selected" ? it.state.model : null;
-      if (!model && curModel && (it.available_models || []).includes(curModel)) {
-        await selectModel(curModel);
-        model = curModel;
+    this._navTarget = target;
+    const pos = $("#editorPhotoPos");
+    if (pos) pos.textContent = `${target + 1} / ${list.length}`;
+    if (this._navBusy) {
+      // Фото, що зараз вантажиться, вже не потрібне — перервати.
+      if (this._navLoading !== null && this._navLoading !== target) {
+        this._openSeq = (this._openSeq || 0) + 1;
       }
-      await this.open(model, { tab: model || tab !== "cleanup" ? tab : "polygons" });
+      return;
+    }
+    this._navRun();
+  },
+
+  async _navRun() {
+    this._navBusy = true;
+    const s = this.state;
+    const tab = s.activeTab;
+    const curModel = s.model;
+    const view = { scale: s.scale, panX: s.panX, panY: s.panY };
+    let loaded = appState.idx;     // яке фото зараз ПОВНІСТЮ відкрите
+    this._navLoading = null;
+    try {
+      while (this._navTarget !== null && this._navTarget !== loaded) {
+        const target = this._navTarget;
+        this._navKeepModal = true;            // close() не ховає вікно → без «мигання»
+        try { await catalogGoto(target); }    // flush (зберегти) + закрити поточне фото
+        finally { this._navKeepModal = false; }
+        const it = currentItem();
+        if (!it) break;
+        let model = it.state && it.state.status === "selected" ? it.state.model : null;
+        if (!model && curModel && (it.available_models || []).includes(curModel)) {
+          await selectModel(curModel);
+          model = curModel;
+        }
+        this._navLoading = target;
+        const ok = await this.open(model, { tab: model || tab !== "cleanup" ? tab : "polygons", view });
+        this._navLoading = null;
+        loaded = ok ? target : null;
+        if (!ok && !this.state.open && this._navTarget === target) break;   // помилка завантаження
+      }
     } finally {
       this._navBusy = false;
+      this._navTarget = null;
+      this._navLoading = null;
+      if (this.state.open) this._updateTitle();
     }
   },
 
@@ -517,7 +580,7 @@ export const editor = {
     // reopen на Polygons показував стару білу групову підсвітку (SVG-діти
     // лишались у DOM від попереднього сеансу редактора).
     this._groupsClearVisualLayers();
-    this._modal().classList.remove("open");
+    if (!this._navKeepModal) this._modal().classList.remove("open");
     this._wrap().classList.remove("has-cursor-ok", "is-panning", "can-pan", "polygon-mode");
     this._svg().classList.remove("svg--active");
     if (this.state.stem) _clearPolygonsCache(this.state.stem);

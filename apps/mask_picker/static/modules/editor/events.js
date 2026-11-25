@@ -101,6 +101,8 @@ export const eventsMixin = {
     $("#polyGhostNext").onclick = () => this._ghostToggle("next");
     $("#editorPrevPhoto").onclick = () => this.gotoPhoto(-1);
     $("#editorNextPhoto").onclick = () => this.gotoPhoto(1);
+    $("#editorFollowCam").onclick = () => this._followToggle();
+    this._followInit();
     $("#trackCreate").onclick = () => this._trackCreate();
     $("#trackAssign").onclick = () => this._trackAssign();
     $("#trackOutside").onclick = () => this._trackOutside();

@@ -246,7 +246,8 @@
       </table>
       <h3 style="margin-top:16px;">Редактор — усі вкладки</h3>
       <table class="shortcuts">
-        <tr><td>◀ / ▶, <kbd>PageUp</kbd> / <kbd>PageDown</kbd></td><td>Зберегти й відкрити попереднє / наступне фото</td></tr>
+        <tr><td><kbd>Q</kbd> / <kbd>W</kbd>, ◀ / ▶, <kbd>PageUp</kbd> / <kbd>PageDown</kbd></td><td>Зберегти й відкрити попереднє / наступне фото (зум лишається; кілька швидких натискань — стрибок на кілька фото)</td></tr>
+        <tr><td><kbd>F</kbd> / 🎥 F</td><td>Камера за курсором: при наближенні зображення прокручується туди, куди ведеш мишку</td></tr>
         <tr><td><kbd>Tab</kbd></td><td>Наступна вкладка (Cleanup → Polygons → Groups)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Скасувати (і операції з треками: розділити / злити / видалити)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Повторити</td></tr>
@@ -309,6 +310,27 @@
         <button id="btnAddLabel" class="btn btn--ghost">+ Додати клас</button>
         <div style="flex:1"></div>
         <button id="btnSaveLabels" class="btn btn--primary">💾 Зберегти</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================ MODAL: класи після імпорту (обов'язкове) ================ -->
+  <div class="modal" id="importLabelsModal" data-required>
+    <div class="modal__backdrop"></div>
+    <div class="modal__content modal__content--labels">
+      <h2>Класи для цих фото</h2>
+      <p class="muted" style="margin:0 0 10px">Які класи (labels) розмічатимете на цих фото? Впиши назви —
+        вони з'являться в редакторі (клавіші 1–9). Класи спільні для всього датасету.</p>
+      <div id="importLabelsChips" class="import-labels__chips"></div>
+      <div class="import-labels__add">
+        <input type="text" id="importLabelsInput" placeholder="назва класу, напр. nucleus (можна кілька через кому)" />
+        <button id="importLabelsAdd" class="btn">+ Додати</button>
+      </div>
+      <p class="muted" style="margin:8px 0 0;font-size:12px">Наявні класи тут не видаляються — перейменувати чи
+        видалити можна потім у <b>Labels</b> угорі.</p>
+      <div class="labels-actions" style="margin-top:14px">
+        <div style="flex:1"></div>
+        <button id="importLabelsDone" class="btn btn--primary">✓ Готово</button>
       </div>
     </div>
   </div>
@@ -385,10 +407,11 @@
           <button class="tab" data-tab="polygons" role="tab">✏️ Polygons</button>
           <button class="tab" data-tab="groups" role="tab">🔗 Groups</button>
         </div>
-        <div class="editor__nav" title="Попереднє / наступне фото у списку (PageUp / PageDown): зберігає це фото й відкриває сусіднє на тій самій вкладці">
+        <div class="editor__nav" title="Попереднє / наступне фото у списку (Q / W або PageUp / PageDown): зберігає це фото й відкриває сусіднє на тій самій вкладці">
           <button id="editorPrevPhoto" class="btn btn--mini">◀</button>
           <span id="editorPhotoPos" class="muted"></span>
           <button id="editorNextPhoto" class="btn btn--mini">▶</button>
+          <button id="editorFollowCam" class="btn btn--mini" title="Камера за курсором (F): при наближенні точка під курсором плавно їде до центру вікна — зображення саме прокручується туди, куди ведеш мишку">🎥 F</button>
         </div>
         <div class="cleanup__stats" id="cleanupStats">—</div>
       </div>

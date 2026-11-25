@@ -13,6 +13,8 @@ export function setEditor(ed) { editorRef = ed; }
 export function bindEvents() {
   document.addEventListener("keydown", (e) => {
     if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+    // Обов'язкове вікно (data-required, напр. класи після імпорту) — клавіші не діють.
+    if (document.querySelector(".modal.open[data-required]")) return;
     if (editorRef && editorRef.state.open) { editorRef.onKey(e); return; }
 
     if (e.key === "ArrowRight") { e.preventDefault(); next(); return; }

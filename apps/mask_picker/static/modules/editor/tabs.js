@@ -139,7 +139,8 @@ export const tabsMixin = {
     const pos = $("#editorPhotoPos");
     if (pos) {
       const list = filtered();
-      const i = list.findIndex((it) => it.stem === stem);
+      // Під час швидкого перестрибування (gotoPhoto) показуємо КІНЦЕВЕ фото, не проміжне.
+      const i = this._navTarget != null ? this._navTarget : list.findIndex((it) => it.stem === stem);
       pos.textContent = i >= 0 ? `${i + 1} / ${list.length}` : "";
     }
   },
