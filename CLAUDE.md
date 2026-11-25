@@ -80,6 +80,15 @@ docker compose run --rm bake --data-dir data/<ds> --pack             # ZIP → .
   «📎 До треку…», Ctrl+Z для split/merge/delete треку (серверні знімки), `docs/HOTKEYS.md` (+ довідка «?» в програмі) → ярлик завжди перезбирає, статика без кешу (`SEND_FILE_MAX_AGE_DEFAULT=0`), назва в шапці редактора стискається. exe-лаунчер — НЕ робити (рішення: лишається Docker + ярлик). Інструкція для людей по ручному режиму й карта збереження
   даних — `README.md` §«Ручна розмітка». Відкриті ідеї: імпорт зовнішніх форматів розмітки (COCO/CVAT),
   native-діалоги вибору папки в Docker (`15`§6), попередження при bake про клас поза labels.json (F-016).
+- **Встановлення в команди (5 студентів, Docker лишається — рішення 2026-11-22):** інструкція `TEAM.md` + PDF
+  `docs/Mask_Picker_Instrukciya.pdf` (джерело `docs/team_guide/guide.html`, `node docs/team_guide/build_pdf.js`).
+  Зустрічались проблеми: per-user Docker без «Virtual Machine Platform» → All-users / `wsl --install`; «WSL not installed» →
+  крок 2.0 `wsl --install`; `wsl-bootstrap … /dev/sdd is not usable` (зіпсований data-диск, ймовірно через брак місця
+  на C:) → `wsl --shutdown`, `wsl --unregister docker-desktop`, видалити `%LOCALAPPDATA%\Docker\wsl`, ребут — допомогло;
+  `git clone` у PowerShell дає червоний `NativeCommandError` — нешкідливо. **Відкрите (2026-11-25):** юзер з малим C: —
+  Docker уже запускається; далі йому: дані Docker → `D:\DockerData` (Settings → Resources → Advanced → Disk image
+  location), Git → `D:\Git`, `git clone` у `D:\`, `create_shortcuts`, оновлення `cd D:\cryobiology-6`. Мейнтейнер
+  повернеться з результатом. Можливо, варто додати в PDF розділ «мало місця на C:» і російські назви пунктів Windows.
 - Хмарна сесія Claude Code не запускає код з репо без дозволу (класифікатор безпеки) — попросити дозвіл, якщо треба.
 
 ## Ключові правила (з історії багів — порушення = регресії десинку)
