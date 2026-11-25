@@ -204,7 +204,7 @@ Windows бракує одного компонента. Натисни <b>Close<
 <h3>4.1. Відкрити PowerShell</h3>
 <p><b>PowerShell</b> — вікно, куди пишуть команди текстом. Нам треба лише кілька команд, їх можна копіювати звідси.</p>
 <ol>
-  <li>Натисни <b>Пуск</b>, надрукуй <b>PowerShell</b>, натисни <span class="key">Enter</span>.</li>
+  <li>Натисни <b>Пуск</b>, надрукуй <b>PowerShell</b>, натисни <span class="key">Enter</span>. Потрібен саме <b>Windows PowerShell</b>, не «PowerShell ISE».</li>
   <li>Відкриється вікно з текстом на зразок <code>PS C:\Users\Ім'я&gt;</code> і миготливим курсором.</li>
 </ol>
 <div class="box see"><p><b>Як вставити команду:</b> скопіюй її з цього PDF (<span class="key">Ctrl</span>+<span class="key">C</span>),
@@ -218,6 +218,11 @@ Windows бракує одного компонента. Натисни <b>Close<
 <span class="cmd">git clone https://github.com/artemizzo/cryobiology-6.git</span>
 <p>Відкрити папку програми у звичайному провіднику Windows:</p>
 <span class="cmd">explorer cryobiology-6</span>
+<div class="box warn"><p>Після <code>git clone</code> з'явився <b>червоний текст</b> з <code>NativeCommandError</code> /
+<code>RemoteException</code>? Найчастіше це <b>не помилка</b>: так деякі вікна PowerShell (особливо
+<b>PowerShell ISE</b>) показують звичайне повідомлення Git. Перевір: виконай <code>explorer cryobiology-6</code> —
+якщо в папці є файли (серед них <b>create_shortcuts</b>), усе завантажилось, йди далі. Якщо папки нема або вона
+порожня — видали її, відкрий звичайний <b>Windows PowerShell</b> (не «ISE») і повтори <code>git clone</code>.</p></div>
 <div class="box warn"><p>Якщо пише <b>«git не розпізнано як ім'я командлету»</b> (git is not recognized) — закрий вікно
 PowerShell, відкрий його знову і повтори команди. Не допомогло — перевстанови Git (крок 3).</p></div>
 <p>Вікно PowerShell тепер можна закрити.</p>
