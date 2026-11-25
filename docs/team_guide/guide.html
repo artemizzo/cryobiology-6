@@ -144,6 +144,19 @@
   <li>Коли з'явиться кнопка <b>Close and restart</b> (або <b>Close and log out</b>) — збережи все, що відкрито,
       і натисни її. <b>ПК перезавантажиться</b> — це обов'язково.</li>
 </ol>
+<div class="box warn">
+<p><b>Інсталятор питає «Per-user» чи «All-users installation»</b> — обирай <b>All-users installation</b>
+(для всіх користувачів), а коли Windows спитає дозвіл — <b>Так</b>.</p>
+<p><b>Помилка «Installation failed. One prerequisite is not fulfilled… Virtual Machine Platform»</b> — це не страшно,
+Windows бракує одного компонента. Натисни <b>Close</b> і зроби одне з двох:</p>
+<ol>
+  <li><b>Найпростіше:</b> запусти інсталятор ще раз і цього разу обери <b>All-users installation</b>.</li>
+  <li>Або: Пуск → набери <b>PowerShell</b> → <b>правий клік</b> по ньому → <b>Запуск від імені адміністратора</b>
+      (рос.: «Запуск от имени администратора») → <b>Так</b>. У вікні виконай команду нижче, дочекайся кінця,
+      <b>перезавантаж ПК</b> і запусти інсталятор Docker ще раз:</li>
+</ol>
+<span class="cmd">wsl --install</span>
+</div>
 
 <h3>2.3. Перший запуск Docker</h3>
 <p>Після перезавантаження Docker Desktop відкриється сам (якщо ні — знайди його в меню Пуск: набери «Docker»).</p>
