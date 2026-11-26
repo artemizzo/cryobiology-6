@@ -9,6 +9,7 @@ Cryobiology V / **Mask Picker**: human-in-the-loop пайплайн доразм
 - `docs/architecture/README.md` — індекс 14 підсистем (front↔back) + `15_DOCKER.md` + `16_MANUAL_MODE.md` + `17_TRACKS.md`. Починати з `01_DATA_MODEL_AND_ID_SPACES.md`.
 - `docs/architecture/_AUDIT_FINDINGS.md` — живий лог багів (F-001…F-019), відкриті пункти — там.
 - `docs/CODE_AUDIT_PRINCIPLES.md` — **обовʼязково перед правками** (див. нижче).
+- **`docs/FEATURES.md` — повний каталог функцій: що, де в коді, які рішення мейнтейнера. Читати першим; оновлювати при кожній новій функції.**
 - `docs/HOTKEYS.md` — усі гарячі клавіші й кнопки для користувача (дзеркало — `#helpModal` в `index.html`; міняєш клавіші — онови обидва).
 - `docs/TECHNICAL_REPORT.md`, `docs/PROJECT_JOURNEY.md` — історія й рішення.
 

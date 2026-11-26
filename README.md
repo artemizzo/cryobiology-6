@@ -172,6 +172,7 @@ python apps/mask_picker/app.py --workspace data/my_dataset    # → http://127.0
 Фінальний датасет: `python tools/launchers/bake_all.py --data-dir data/my_dataset --pack`.
 
 ## Документація
+- **[`docs/FEATURES.md`](docs/FEATURES.md)** — опис усіх функцій програми.
 - **[`docs/HOTKEYS.md`](docs/HOTKEYS.md)** — усі гарячі клавіші й кнопки (коротко — кнопка **?** у програмі).
 - **[`docs/TECHNICAL_REPORT.md`](docs/TECHNICAL_REPORT.md)** — цілісна технічна записка.
 - **[`docs/architecture/`](docs/architecture/README.md)** — детальна архітектура (14 підсистем, front↔back).
