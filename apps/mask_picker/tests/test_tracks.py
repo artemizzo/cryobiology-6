@@ -251,6 +251,10 @@ def test_timeline_endpoint(ws):
     assert r["frames"][2]["polygons"] == 2 and r["frames"][2]["tracked"] == 1
     row = next(t for t in r["tracks"] if t["id"] == 7)
     assert row["cells"] == ["", "", "k", "v", "v", "k", "v", "o", "", ""]
+    # ?shapes=1 — ще й контури кожного кадру (для прев'ю повзунка)
+    r3 = client.get(f"/api/timeline/{FR[4]}?shapes=1").get_json()
+    assert len(r3["frames"][2]["shapes"]) == 2 and r3["frames"][2]["shapes"][0]["track_id"] == 7
+    assert "shapes" not in r["frames"][0]
     # фото без серії — один кадр, без треків інших серій
     r2 = client.get("/api/timeline/other").get_json()
     assert [f["stem"] for f in r2["frames"]] == ["other"] and r2["tracks"] == []

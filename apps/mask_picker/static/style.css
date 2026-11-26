@@ -382,7 +382,7 @@ kbd {
 }
 /* Назва фото стискається (…), а не штовхає вправо ◀ ▶ у вузькому вікні; повна — у підказці (title). */
 .cleanup__header h2 {
-  margin: 0; font-size: 16px; flex: 1 1 0; min-width: 0;
+  margin: 0; font-size: 16px; flex: 0 1 auto; max-width: 26%; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .cleanup__header .editor__tabs, .cleanup__header .editor__nav { flex-shrink: 0; }
@@ -915,14 +915,14 @@ kbd {
   padding: 4px 12px; border-radius: 12px; pointer-events: none; white-space: nowrap;
 }
 
-/* Таймлайн (editor/timeline.js) */
-.timeline { margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: rgba(255,255,255,0.02); }
-.timeline__bar { display: flex; align-items: center; gap: 4px; padding: 3px 6px; font-size: 12px; }
-.timeline__bar select { font-size: 11px; padding: 1px 2px; }
-.timeline__info { margin-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
-.timeline__scroll { overflow: auto; max-height: 150px; }
-.timeline__scroll canvas { display: block; cursor: pointer; }
-.timeline--collapsed .timeline__scroll,
-.timeline--collapsed #tlFirst, .timeline--collapsed #tlPrevKey, .timeline--collapsed #tlPlay,
-.timeline--collapsed #tlNextKey, .timeline--collapsed #tlLast, .timeline--collapsed #tlSpeed,
-.timeline--collapsed .timeline__info { display: none; }
+/* Повзунок кадрів серії у шапці редактора (editor/timeline.js) */
+.scrub { flex: 1 1 0; min-width: 120px; margin: 0 14px; align-self: center; visibility: hidden; }
+.scrub canvas { display: block; width: 100%; height: 26px; cursor: pointer; }
+/* Під час протягування — лише контури кадру з повзунка, свої полігони сховані */
+#polygonSvg.is-scrubbing #polygonShapesLayer, #polygonSvg.is-scrubbing #polygonVerticesLayer,
+#polygonSvg.is-scrubbing #polygonDraftLayer, #polygonSvg.is-scrubbing #polygonGhostLayer,
+#polygonSvg.is-scrubbing #groupsOverlayLayer, #polygonSvg.is-scrubbing #groupsBoundaryLayer { display: none; }
+.polygon-scrub {
+  fill: var(--c); fill-opacity: 0.22; stroke: var(--c);
+  stroke-width: calc(1.5px * var(--zinv, 1)); vector-effect: non-scaling-stroke;
+}

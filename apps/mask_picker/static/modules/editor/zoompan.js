@@ -247,7 +247,7 @@ export const zoompanMixin = {
     ctx.imageSmoothingEnabled = true;
     ctx.clearRect(0, 0, W, H);
     // Shift+Q/W: фон — фото сусіднього кадру (полігони лишаються від поточного).
-    const peek = this.state.bgPeek;
+    const peek = this.state.scrub || this.state.bgPeek;   // повзунок кадрів / Shift+Q/W
     if (peek && peek.img) { ctx.drawImage(peek.img, 0, 0, W, H); return; }
     const wantOverlay = this._currentBgSource() === "overlay";
     const img = (wantOverlay && overlayImage) ? overlayImage : originalImage;

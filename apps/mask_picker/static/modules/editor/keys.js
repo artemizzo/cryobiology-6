@@ -39,6 +39,12 @@ export const keysMixin = {
       if (!e.repeat) this.gotoPhoto(e.key === "PageUp" ? -1 : 1);
       return;
     }
+    // Alt+Q / Alt+W — попередній / наступний ключовий кадр обраного треку (timeline.js).
+    if (!ctrl && e.altKey && !e.shiftKey && (e.code === "KeyQ" || e.code === "KeyW")) {
+      e.preventDefault();
+      if (!e.repeat) this._tlJumpKey(e.code === "KeyQ" ? -1 : 1);
+      return;
+    }
     // Shift+Q / Shift+W — фон сусіднього кадру, полігони лишаються (zoompan._bgPeekStep).
     if (!ctrl && !e.altKey && e.shiftKey && (e.code === "KeyQ" || e.code === "KeyW")) {
       e.preventDefault();
@@ -49,12 +55,6 @@ export const keysMixin = {
     if (!ctrl && !e.altKey && (e.code === "KeyQ" || e.code === "KeyW")) {
       e.preventDefault();
       if (!e.repeat) this.gotoPhoto(e.code === "KeyQ" ? -1 : 1);
-      return;
-    }
-    // T — показати / сховати таймлайн.
-    if (!ctrl && !e.altKey && !e.shiftKey && e.code === "KeyT") {
-      e.preventDefault();
-      if (!e.repeat) this._tlToggle();
       return;
     }
     // F — 🎥 камера біля краю екрана (як у Dota), увімк. / вимк.

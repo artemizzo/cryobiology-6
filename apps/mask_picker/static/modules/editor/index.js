@@ -41,7 +41,7 @@ import { $, showToast } from "../util.js";
 import { api } from "../api.js";
 import {
   appLabels, usableLabels, currentItem, filtered,
-  DEFAULT_LABEL, state as appState,
+  DEFAULT_LABEL, MANUAL_MODEL, state as appState,
 } from "../state.js";
 import { renderAll, goto as catalogGoto, selectModel } from "../catalog.js";
 import { _clearPolygonsCache } from "../polyoverlay.js";
@@ -58,7 +58,7 @@ import { historyMixin } from "./history.js";
 import { repairMixin } from "./repair.js";
 import { ghostMixin } from "./ghost.js";
 import { tracksMixin } from "./tracks.js";
-import { timelineMixin } from "./timeline.js";
+import { timelineMixin, cachedFrameImage } from "./timeline.js";
 
 export const editor = {
   state: {
@@ -250,6 +250,9 @@ export const editor = {
     else { s.scale = 1; s.panX = 0; s.panY = 0; }
     s.isPanning = false; s.spaceDown = false;
     s.bgPeek = null;            // Shift+Q/W — фон сусіднього кадру, при новому фото скидається
+    s.scrub = null;             // прев'ю повзунка кадрів (timeline.js) — нове фото його замінює
+    this._scrubIdx = null;
+    this._svg().classList.remove("is-scrubbing");
     this._bgPeekBadge();
     s.bgPreviewPrev = null;
     this._historyClear();   // новий стем = свіжа історія (global undo/redo)
@@ -301,7 +304,7 @@ export const editor = {
     // Розмітка попереднього фото не повинна «висіти» над новим, поки воно вантажиться
     // (при ◀/▶ вікно редактора не закривається — див. _navKeepModal у close()).
     for (const l of [this._layerShapes(), this._layerVertices(), this._layerDraft(),
-                     this._layerGhost(), this._layerMarkers()]) {
+                     this._layerGhost(), this._layerMarkers(), $("#polygonScrubLayer")]) {
       if (l) l.replaceChildren();
     }
     { const cm = this._cMarks(); cm.getContext("2d").clearRect(0, 0, cm.width, cm.height); }
@@ -311,7 +314,8 @@ export const editor = {
     try {
       const [origImg, ovImg] = await Promise.all([
         this._loadImage(`/api/image/${encodeURIComponent(s.stem)}`),
-        s.model
+        // «manual»: overlay = копія оригіналу → не вантажити те саме фото вдруге.
+        s.model && s.model !== MANUAL_MODEL
           ? this._loadImage(`/api/overlay/${encodeURIComponent(s.model)}/${encodeURIComponent(s.stem)}`).catch(() => null)
           : Promise.resolve(null),
       ]);
@@ -477,6 +481,10 @@ export const editor = {
   },
 
   _loadImage(url) {
+    // Кадри серії, вже завантажені повзунком (timeline.js), — без запиту до сервера.
+    const m = /^\/api\/image\/([^/?]+)$/.exec(url);
+    const hit = m && cachedFrameImage(decodeURIComponent(m[1]));
+    if (hit) return Promise.resolve(hit);
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
@@ -591,7 +599,7 @@ export const editor = {
     // reopen на Polygons показував стару білу групову підсвітку (SVG-діти
     // лишались у DOM від попереднього сеансу редактора).
     this._groupsClearVisualLayers();
-    if (!this._navKeepModal) { this._modal().classList.remove("open"); this._tlStop(); }
+    if (!this._navKeepModal) this._modal().classList.remove("open");
     this._wrap().classList.remove("has-cursor-ok", "is-panning", "can-pan", "polygon-mode");
     this._svg().classList.remove("svg--active");
     if (this.state.stem) _clearPolygonsCache(this.state.stem);

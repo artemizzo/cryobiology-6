@@ -43,8 +43,12 @@ export function restoreLastStem() {
 export function renderAll() {
   _saveCurrentStem();
   renderSidebar();
-  renderWorkspace();
   renderProgress();
+  // Поки вікно редактора відкрите (перехід ◀/▶/Q/W/повзунок), картки варіантів за ним не
+  // видно — не перемальовувати їх і не вантажити overlay/прев'ю на кожному кадрі. Редактор
+  // закривається → close() ховає вікно й знову кличе renderAll → картки оновлюються.
+  if (document.querySelector("#cleanupModal.open")) return;
+  renderWorkspace();
   refreshPolygonOverlaysForCurrent().catch(() => {});
 }
 

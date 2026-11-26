@@ -517,8 +517,10 @@ def _cell(track: dict, order: dict, stem: str) -> str:
     return "v" if prev is not None and not prev[1].get("outside") else ""
 
 
-def timeline(cfg: Config, state: StateStore, stem: str) -> dict:
-    """Дані таймлайна для серії фото `stem`: кадри (к-сть полігонів, стан) і рядки треків."""
+def timeline(cfg: Config, state: StateStore, stem: str, with_shapes: bool = False) -> dict:
+    """Дані таймлайна для серії фото `stem`: кадри (к-сть полігонів, стан) і рядки треків.
+    with_shapes — ще й контури полігонів кожного кадру (для миттєвого перегляду при протягуванні
+    повзунка кадрів: фронт показує їх із пам'яті, не відкриваючи кожен кадр)."""
     series, _ = series_of(stem)
     frames = series_frames(cfg, series) or [stem]
     if stem not in frames:
@@ -527,6 +529,7 @@ def timeline(cfg: Config, state: StateStore, stem: str) -> dict:
     out_frames = []
     for s in frames:
         n = nt = 0
+        shapes = []
         p = _polygons_path(cfg.polygons_dir, s) if cfg.polygons_dir else None
         if p is not None and p.exists():
             try:
@@ -534,10 +537,15 @@ def timeline(cfg: Config, state: StateStore, stem: str) -> dict:
                 n = len(shapes)
                 nt = sum(1 for sh in shapes if (sh.get("flags") or {}).get("track_id") is not None)
             except Exception:
-                pass
+                shapes = []
         st = state.get(s) or {}
-        out_frames.append({"stem": s, "num": series_of(s)[1], "polygons": n, "tracked": nt,
-                           "status": st.get("status") or "", "dirty": bool(st.get("dirty"))})
+        fr = {"stem": s, "num": series_of(s)[1], "polygons": n, "tracked": nt,
+              "status": st.get("status") or "", "dirty": bool(st.get("dirty"))}
+        if with_shapes:
+            fr["shapes"] = [{"label": sh.get("label"), "points": sh.get("points") or [],
+                             "track_id": (sh.get("flags") or {}).get("track_id")}
+                            for sh in shapes if isinstance(sh, dict)]
+        out_frames.append(fr)
     rows = []
     with _LOCK:
         data = load_tracks(cfg)

@@ -56,7 +56,8 @@ def make_blueprint(cfg: Config, state: StateStore, catalog: CatalogService) -> B
 
     @bp.route("/api/timeline/<stem>", methods=["GET"])
     def api_timeline(stem: str):
-        return jsonify({"ok": True, **T.timeline(cfg, state, stem)})
+        with_shapes = (request.args.get("shapes") or "") in ("1", "true")
+        return jsonify({"ok": True, **T.timeline(cfg, state, stem, with_shapes)})
 
     @bp.route("/api/tracks/<tid>/split", methods=["POST"])
     def api_tracks_split(tid: str):
