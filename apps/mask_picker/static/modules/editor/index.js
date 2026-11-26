@@ -59,6 +59,7 @@ import { repairMixin } from "./repair.js";
 import { ghostMixin } from "./ghost.js";
 import { tracksMixin } from "./tracks.js";
 import { timelineMixin, cachedFrameImage } from "./timeline.js";
+import { holdMixin } from "./hold.js";
 
 export const editor = {
   state: {
@@ -208,6 +209,7 @@ export const editor = {
   ...ghostMixin,
   ...tracksMixin,
   ...timelineMixin,
+  ...holdMixin,
 
   // =================================================================
   //                              OPEN / CLOSE
@@ -354,6 +356,7 @@ export const editor = {
       this._updateHint();
       this._ghostOnOpen();   // тінь сусідніх фото (async; W/H уже відомі)
       this._timelineOnOpen();   // таймлайн серії (async)
+      this._holdBindBlur();
       this._tlApplyPendingSelect();
       return true;
     } catch (e) {

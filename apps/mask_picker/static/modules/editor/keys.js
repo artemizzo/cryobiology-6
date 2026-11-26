@@ -48,13 +48,13 @@ export const keysMixin = {
     // Shift+Q / Shift+W — фон сусіднього кадру, полігони лишаються (zoompan._bgPeekStep).
     if (!ctrl && !e.altKey && e.shiftKey && (e.code === "KeyQ" || e.code === "KeyW")) {
       e.preventDefault();
-      if (!e.repeat) this._bgPeekStep(e.code === "KeyQ" ? -1 : 1);
+      if (!e.repeat) this._holdStart(e.code, e.code === "KeyQ" ? -1 : 1, "peek");   // тримати — з прискоренням (hold.js)
       return;
     }
     // Q / W — те саме лівою рукою (права зазвичай на мишці).
     if (!ctrl && !e.altKey && (e.code === "KeyQ" || e.code === "KeyW")) {
       e.preventDefault();
-      if (!e.repeat) this.gotoPhoto(e.code === "KeyQ" ? -1 : 1);
+      if (!e.repeat) this._holdStart(e.code, e.code === "KeyQ" ? -1 : 1, "nav");    // тримати — перемотка (hold.js)
       return;
     }
     // F — 🎥 камера біля краю екрана (як у Dota), увімк. / вимк.
@@ -203,6 +203,11 @@ export const keysMixin = {
   },
 
   onKeyUp(e) {
+    // Відпустив Q / W — кінець перемотки (відкрити кадр, на якому зупинився).
+    if ((e.code === "KeyQ" || e.code === "KeyW") && this._hold && this._hold.code === e.code) {
+      this._holdStop(true);
+      return;
+    }
     if (e.code === "Space") {
       this.state.spaceDown = false;
       this._wrap().classList.remove("can-pan");

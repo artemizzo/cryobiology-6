@@ -219,17 +219,27 @@ export const timelineMixin = {
     if (this._scrubIdx === fi) return;
     this._scrubIdx = fi;
     const f = tl.frames[fi];
-    const isOwn = f.stem === this.state.stem;
+    this._previewFrame(f.stem, f.shapes || [], `кадр ${f.num || fi + 1}`);
+    this._timelineDraw();
+  },
+
+  // Показати кадр `stem` з пам'яті поверх редактора (фото + контури), не відкриваючи його.
+  // Спільне для повзунка й затиснутих Q / W (hold.js). shapes = null → взяти з даних серії.
+  _previewFrame(stem, shapes, posText) {
+    const isOwn = stem === this.state.stem;
+    if (shapes == null) {
+      const f = this._tl && this._tl.frames.find((x) => x.stem === stem);
+      shapes = f ? f.shapes || [] : [];
+    }
     this._svg().classList.toggle("is-scrubbing", !isOwn);
     const pos = $("#editorPhotoPos");
-    if (pos) pos.textContent = `кадр ${f.num || fi + 1}`;
-    // контури полігонів кадру — з пам'яті
+    if (pos && posText) pos.textContent = posText;
     const layer = $("#polygonScrubLayer");
     if (layer) {
       layer.replaceChildren();
       if (!isOwn) {
         const NS = "http://www.w3.org/2000/svg";
-        for (const sh of f.shapes || []) {
+        for (const sh of shapes) {
           if (!sh.points || sh.points.length < 3) continue;
           const el = document.createElementNS(NS, "polygon");
           el.setAttribute("points", sh.points.map((p) => `${p[0]},${p[1]}`).join(" "));
@@ -249,16 +259,15 @@ export const timelineMixin = {
         }
       }
     }
-    // фото кадру — з пам'яті (якщо ще не встигло — довантажити й показати)
-    const img = frameImgs.get(f.stem);
-    this.state.scrub = isOwn ? null : { stem: f.stem, img: img || (this.state.scrub && this.state.scrub.img) || null };
+    const img = frameImgs.get(stem);
+    this.state.scrub = isOwn ? null : { stem, img: img || (this.state.scrub && this.state.scrub.img) || null };
+    this._previewStem = stem;
     this._drawBase();
     if (!img && !isOwn) {
-      loadFrameImage(f.stem).then((im) => {
-        if (this._scrubIdx === fi && this.state.scrub) { this.state.scrub.img = im; this._drawBase(); }
+      loadFrameImage(stem).then((im) => {
+        if (this._previewStem === stem && this.state.scrub) { this.state.scrub.img = im; this._drawBase(); }
       }).catch(() => {});
     }
-    this._timelineDraw();
   },
 
   _scrubEnd() {

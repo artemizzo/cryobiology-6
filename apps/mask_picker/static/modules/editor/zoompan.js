@@ -1,5 +1,6 @@
 import { showToast } from "../util.js";
 import { filtered } from "../state.js";
+import { cachedFrameImage, loadFrameImage } from "./timeline.js";
 /**
  * zoompanMixin — спільний для обох табів zoom/pan + промальовка base canvas
  * (з overlay або з оригіналу) + перемикання background source.
@@ -160,13 +161,15 @@ export const zoompanMixin = {
     const token = (this._bgPeekToken = (this._bgPeekToken || 0) + 1);
     s.bgPeek = { offset: off, stem: it.stem, img: (s.bgPeek && s.bgPeek.img) || null };
     this._bgPeekBadge();
-    this._bgPeekCache = this._bgPeekCache || new Map();
-    let img = this._bgPeekCache.get(it.stem);
+    // спільний кеш кадрів (timeline.js): вже завантажені наперед — миттєво
+    let img = cachedFrameImage(it.stem);
+    for (let k = 1; k <= 4; k++) {                  // наперед — для затиснутого Shift+Q/W
+      const nx = list[cur + off + k * Math.sign(delta)];
+      if (nx) loadFrameImage(nx.stem).catch(() => {});
+    }
     if (!img) {
-      try { img = await this._loadImage(`/api/image/${encodeURIComponent(it.stem)}`); }
+      try { img = await loadFrameImage(it.stem); }
       catch { showToast(`Не вдалося завантажити ${it.stem}`, "err", 2500); return; }
-      if (this._bgPeekCache.size > 12) this._bgPeekCache.delete(this._bgPeekCache.keys().next().value);
-      this._bgPeekCache.set(it.stem, img);
     }
     if (token !== this._bgPeekToken || !s.bgPeek || s.stem !== this.state.stem) return;
     s.bgPeek.img = img;
